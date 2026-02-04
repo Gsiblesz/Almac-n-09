@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Almacén 09 - Entradas y salidas</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="header">
+        <div>
+          <p class="eyebrow">Almacén 09</p>
+          <h1>Entradas y salidas</h1>
+          <p class="subtitulo">
+            Selecciona un lote, valida cantidades contra empaquetado y confirma la salida.
+          </p>
+        </div>
+        <div class="header-actions">
+          <div class="segmented" role="tablist" aria-label="Tipo de operación">
+            <button id="btnEntradas" class="segmented-btn active" type="button" role="tab" aria-selected="true">
+              Entradas
+            </button>
+            <button id="btnSalidas" class="segmented-btn" type="button" role="tab" aria-selected="false">
+              Salidas
+            </button>
+          </div>
+          <button id="recargar" class="secondary" type="button">Recargar</button>
+        </div>
+      </header>
+
+      <section class="grid">
+        <aside class="panel">
+          <h2>Lotes disponibles</h2>
+          <ul id="loteList" class="lote-list"></ul>
+          <p id="loteVacio" class="muted">No hay lotes pendientes.</p>
+        </aside>
+
+        <section class="panel detalle">
+          <h2 id="detalleTitulo">Selecciona un lote</h2>
+          <form id="validacionForm">
+            <div id="productos" class="productos"></div>
+            <div class="acciones">
+              <button id="validarBtn" type="submit" disabled>Validar y registrar</button>
+            </div>
+          </form>
+          <p id="estado" class="estado" aria-live="polite"></p>
+        </section>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
