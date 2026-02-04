@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registros recientes</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    :root{
+      --bg:#0f1220; --card:#171a2b; --card-2:#1e2235; --accent:#43e6b1; --accent-2:#2196f3; --text:#e9ecff;
+      --muted:#9aa3c2; --border:#2b2f45; --danger:#ff6b6b;
+    }
+    body{ background: radial-gradient(1200px 600px at 50% -20%, #1b2141 0%, #0f1220 60%, #0a0c17 100%); color:var(--text); }
+    .container{ max-width: 1100px; margin: 0 auto; padding:32px 20px 48px; }
+    .page-head{ text-align:center; margin: 6px 0 18px; }
+    .page-head h1{ font-size: 2.4rem; margin: 0 0 6px; }
+    .page-sub{ color:var(--muted); font-size: .95rem; }
+
+    .toolbar{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:space-between; margin:18px 0; }
+    .toolbar-left{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .toolbar .card{ background: var(--card); border:1px solid var(--border); padding:10px 12px; border-radius:14px; display:flex; gap:8px; align-items:center; }
+    .toolbar label{ color: var(--muted); font-weight:600; font-size: .92rem; }
+    .toolbar select{ background: var(--card-2); color: var(--text); border:1px solid var(--border); border-radius:10px; padding:8px 10px; }
+    .btn{ background: var(--accent); color:#122; border:none; border-radius:12px; padding:10px 14px; font-weight:700; cursor:pointer; box-shadow:0 4px 14px rgba(67,230,177,.18); }
+    .btn:hover{ background: var(--accent-2); color:#fff; box-shadow:0 6px 18px rgba(33,150,243,.24); }
+    .btn-outline{ background:transparent; color:var(--text); border:1px solid var(--border); box-shadow:none; }
+    .btn-outline:hover{ border-color: var(--accent-2); color:#fff; }
+
+    .status{ color: var(--muted); font-size:.9rem; }
+    .status .badge{ background: #2e8b57; color:white; padding:2px 8px; border-radius:12px; font-size:.75rem; }
+
+    .error-banner{ display:none; background:rgba(255,107,107,.1); border:1px solid rgba(255,107,107,.3); color:#ffdede; padding:10px 12px; border-radius:10px; margin-top:8px; }
+
+    .card-table{ background: var(--card); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+    table{ width:100%; border-collapse:collapse; }
+    thead th{ background: var(--card-2); text-align:left; font-weight:700; padding:12px 14px; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:1; }
+    tbody td{ padding:10px 14px; border-bottom:1px solid var(--border); }
+    tbody tr:hover{ background: rgba(66,133,244,.06); }
+
+    /* Skeleton loading */
+    .skeleton{ position:relative; overflow:hidden; background:linear-gradient(90deg, transparent, rgba(255,255,255,.05), transparent); background-size:200% 100%; animation: shimmer 1.4s infinite; }
+    @keyframes shimmer{ 0%{ background-position:-200% 0 } 100%{ background-position:200% 0 } }
+    .skeleton-row td{ height:38px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="page-head">
+      <h1>Registros recientes</h1>
+      <div class="page-sub">Consulta las últimas filas guardadas desde Empaquetados o Merma</div>
+      <div style="margin-top:10px;">
+        <a href="menu.html" class="volver-menu">&#8592; Volver al menú</a>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="card">
+          <label>Formulario</label>
+          <select id="sel-form">
+            <option value="Empaquetado">Empaquetados</option>
+            <option value="Merma">Merma</option>
+          </select>
+        </div>
+        <div class="card">
+          <label>Límite</label>
+          <select id="sel-limit">
+            <option>10</option>
+            <option selected>20</option>
+            <option>50</option>
+          </select>
+        </div>
+        <button id="btn-actualizar" class="btn">Actualizar</button>
+        <button id="btn-probar" class="btn btn-outline">Probar conexión</button>
+      </div>
+      <div class="status" id="estado"></div>
+    </div>
+
+    <div id="err" class="error-banner"></div>
+
+    <div class="card-table">
+      <table id="tabla">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  <script>
+  const DEFAULT_URL = "https://script.google.com/macros/s/AKfycbxn-tf1gi_efLVnSgletElQBSMgvn1Ma-SCET5sy48G2QGDpUs93gX5lsRjXA8vsP_9Sg/exec"; // fallback actualizado (mismo que script.js)
+    function getBaseUrl(){ return (localStorage.getItem('WEB_APP_URL_DYNAMIC')||'').trim() || DEFAULT_URL; }
+
+    async function fetchRecent(sheetKey, limit){
+      const base = getBaseUrl();
+      const url = base + (base.includes('?')?'&':'?') + 'action=recent&sheet=' + encodeURIComponent(sheetKey) + '&limit=' + encodeURIComponent(limit);
+      let r, t;
+      try {
+        r = await fetch(url, { method:'GET', cache:'no-store' });
+        t = await r.text();
+      } catch(fetchErr){
+        // Intento no-cors (opaco) solo para detectar alcance del endpoint
+        try { await fetch(url, { method:'GET', mode:'no-cors' }); return { ok:true, headers:[], rows:[], total:0, sheet:sheetKey, opaque:true }; } catch(_){ throw new Error('Failed to fetch endpoint recent: ' + fetchErr.message); }
+      }
+      try { return JSON.parse(t); } catch(e) {
+        throw new Error('Respuesta no JSON (¿falta integrar action=recent en Apps Script?): ' + t.slice(0,160));
+      }
+    }
+
+    function renderSkeleton(){
+      const thead = document.querySelector('#tabla thead');
+      const tbody = document.querySelector('#tabla tbody');
+      thead.innerHTML = '<tr><th>Marca temporal</th><th>FECHA</th><th>PRODUCTO</th><th>...</th></tr>';
+      tbody.innerHTML = '';
+      for(let i=0;i<6;i++){
+        const tr = document.createElement('tr');
+        tr.className = 'skeleton-row';
+        for(let j=0;j<4;j++){
+          const td = document.createElement('td');
+          td.className = 'skeleton';
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+    }
+
+    function normalizeHeaders(headers){
+      // Quitar celdas vacías o generadas "Column X"
+      return (headers||[]).filter(h => {
+        const txt = String(h||'').trim();
+        if(!txt) return false;
+        if(/^column\s*\d+$/i.test(txt)) return false;
+        return true;
+      });
+    }
+    function fmtValue(val, header){
+      // Formatear posibles fechas ISO a hora local (America/Caracas)
+      const tz = 'America/Caracas';
+      const str = String(val||'');
+      if(/\d{4}-\d{2}-\d{2}t\d{2}:\d{2}:\d{2}/i.test(str) || /Z$/.test(str)){
+        const d = new Date(str);
+        if(!isNaN(d.getTime())){
+          return d.toLocaleString('es-VE', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+        }
+      }
+      return val === undefined || val === null ? '' : val;
+    }
+    function renderTable(headers, rows){
+      const thead = document.querySelector('#tabla thead');
+      const tbody = document.querySelector('#tabla tbody');
+      thead.innerHTML = '';
+      tbody.innerHTML = '';
+      const cleanHeaders = normalizeHeaders(headers);
+      const trh = document.createElement('tr');
+      cleanHeaders.forEach(h=>{ const th=document.createElement('th'); th.textContent=h; trh.appendChild(th); });
+      thead.appendChild(trh);
+      (rows||[]).forEach(obj=>{
+        const tr=document.createElement('tr');
+        cleanHeaders.forEach(h=>{ const td=document.createElement('td'); td.textContent = fmtValue(obj[h], h); tr.appendChild(td); });
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function cargar(){
+      const selForm = document.getElementById('sel-form').value;
+      const limit = parseInt(document.getElementById('sel-limit').value, 10) || 20;
+      const estado = document.getElementById('estado');
+      const errBox = document.getElementById('err');
+      errBox.style.display='none';
+      errBox.textContent='';
+      estado.textContent = 'Cargando...';
+      renderSkeleton();
+      try{
+        const data = await fetchRecent(selForm, limit);
+        if(!data || data.ok !== true){
+          estado.textContent = 'Error al cargar (' + (data && data.error ? data.error : 'ok=false') + ')';
+          errBox.style.display='block';
+          errBox.innerHTML = 'No se pudo leer el endpoint de registros. Verifica que tu URL de Apps Script esté correcta en Ajustes y que la versión incluya action=recent.';
+          return;
+        }
+        renderTable(data.headers, data.rows);
+        const when = new Date().toLocaleString();
+        estado.innerHTML = 'Mostrando ' + (data.rows?data.rows.length:0) + ' de ' + (data.total||'') + ' • ' + selForm + ' • <span class="badge">actualizado ' + when + '</span>';
+      }catch(err){
+        estado.textContent = 'Error: ' + err.message;
+        errBox.style.display='block';
+        errBox.innerHTML = 'No se pudo conectar. Prueba la conexión para ver más detalles.';
+      }
+    }
+
+    document.getElementById('btn-actualizar').addEventListener('click', cargar);
+    document.getElementById('sel-form').addEventListener('change', cargar);
+    document.getElementById('sel-limit').addEventListener('change', cargar);
+    document.getElementById('btn-probar').addEventListener('click', async ()=>{
+      const base = getBaseUrl();
+      const estado = document.getElementById('estado');
+      const errBox = document.getElementById('err');
+      const url = base + (base.includes('?')?'&':'?') + 'ping=registros';
+      estado.textContent = 'Probando conexión...';
+      errBox.style.display='none';
+      errBox.textContent='';
+      try{
+        const r = await fetch(url, { method:'GET', cache:'no-store' });
+        const t = await r.text();
+        try{ const j = JSON.parse(t); estado.textContent = j && j.ok ? 'Conexión OK' : 'Respuesta recibida, pero ok=false'; }
+        catch(_){ estado.textContent = 'Conexión recibida (no JSON). Probablemente OK.'; }
+      }catch(e){
+        // intento no-cors
+        try{ await fetch(url, { method:'GET', mode:'no-cors' }); estado.textContent='Conexión probable OK (respuesta opaca)'; }
+        catch(e2){ estado.textContent='No se pudo conectar: ' + e2.message; errBox.style.display='block'; errBox.textContent='Revisa la URL en Ajustes o publica una nueva versión del Apps Script (Deploy > Manage deployments).'; }
+      }
+    });
+    // Refrescar automáticamente cuando se inserta un registro desde otro tab
+    window.addEventListener('registroInsertado', (ev)=> {
+      const current = document.getElementById('sel-form').value;
+      if (ev.detail && ev.detail.sheet === current) {
+        cargar();
+      }
+    });
+    cargar();
+  </script>
+</body>
+</html>

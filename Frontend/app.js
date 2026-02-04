@@ -1,4 +1,4 @@
-const API_BASE = "https://almacen09-backend.onrender.com";
+const API_BASE = "https://almac-n-09.onrender.com";
 
 const loteList = document.getElementById("loteList");
 const loteVacio = document.getElementById("loteVacio");
@@ -15,6 +15,19 @@ let lotes = [];
 let loteActivo = null;
 let modo = "entradas";
 
+function setEstado(mensaje, esError = false) {
+  estado.textContent = mensaje;
+  estado.classList.toggle("error", esError);
+  estado.classList.toggle("ok", !esError && Boolean(mensaje));
+}
+
+function limpiarInputs() {
+  const inputs = productosContainer.querySelectorAll("input[data-codigo]");
+  inputs.forEach((input) => {
+    input.value = "";
+  });
+}
+
 function setModo(nuevoModo) {
   modo = nuevoModo;
   btnEntradas.classList.toggle("active", modo === "entradas");
@@ -23,9 +36,9 @@ function setModo(nuevoModo) {
   btnSalidas.setAttribute("aria-selected", modo === "salidas");
 
   if (modo === "salidas") {
-    estado.textContent = "Salidas estará disponible próximamente.";
+    setEstado("Salidas estará disponible próximamente.");
   } else {
-    estado.textContent = "";
+    setEstado("");
   }
 }
 
@@ -65,7 +78,7 @@ function renderLotes() {
 
 function renderDetalle() {
   productosContainer.innerHTML = "";
-  estado.textContent = "";
+  setEstado("");
 
   if (!loteActivo) {
     detalleTitulo.textContent = "Selecciona un lote";
@@ -81,7 +94,6 @@ function renderDetalle() {
     const info = crearElemento("div", "producto-info");
     info.innerHTML = `
       <div class="producto-codigo">${producto.codigo}</div>
-      <div class="producto-cantidad">Empaquetado: ${producto.cantidad}</div>
     `;
 
     const inputWrap = crearElemento("div", "producto-input");
@@ -112,13 +124,13 @@ function seleccionarLote(loteId) {
 }
 
 async function cargarLotes() {
-  estado.textContent = "";
+  setEstado("");
   try {
     recargarBtn.disabled = true;
     const response = await fetch(`${API_BASE}/lotes`);
     if (!response.ok) {
       const text = await response.text();
-      estado.textContent = `Error: ${text || response.status}`;
+      setEstado(`Error: ${text || response.status}`, true);
       return;
     }
     lotes = await response.json();
@@ -128,7 +140,7 @@ async function cargarLotes() {
     renderLotes();
     renderDetalle();
   } catch (error) {
-    estado.textContent = "No se pudo cargar la lista de lotes.";
+    setEstado("No se pudo cargar la lista de lotes.", true);
   } finally {
     recargarBtn.disabled = false;
   }
@@ -136,7 +148,7 @@ async function cargarLotes() {
 
 validacionForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  estado.textContent = "";
+  setEstado("");
 
   if (!loteActivo) return;
 
@@ -147,41 +159,39 @@ validacionForm.addEventListener("submit", async (event) => {
   }));
 
   if (cantidades.some((item) => Number.isNaN(item.cantidad))) {
-    estado.textContent = "Completa todas las cantidades.";
+    setEstado("Completa todas las cantidades.", true);
     return;
   }
 
   try {
     validarBtn.disabled = true;
-    const response = await fetch(`${API_BASE}/validar-lote`, {
+    const response = await fetch(`${API_BASE}/validar-conteo`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ loteId: loteActivo.id, cantidades }),
+      body: JSON.stringify({
+        codigo_lote: loteActivo.codigo_lote,
+        productos_y_cantidades: cantidades,
+      }),
     });
 
-    if (response.status === 409) {
-      const data = await response.json();
-      const detalles = data.mismatches
-        .map(
-          (item) =>
-            `${item.codigo}: empaquetado ${item.esperado}, almacén ${item.recibido}`
-        )
-        .join(" | ");
-      estado.textContent = `Cantidades no coinciden. ${detalles}`;
+    if (response.status === 400) {
+      const text = await response.text();
+      limpiarInputs();
+      setEstado(text, true);
       return;
     }
 
     if (!response.ok) {
       const text = await response.text();
-      estado.textContent = `Error: ${text || response.status}`;
+      setEstado(`Error: ${text || response.status}`, true);
       return;
     }
 
     const data = await response.json();
-    estado.textContent = data.message || "Lote validado y registrado.";
+    setEstado(data.message || "Lote validado y registrado.");
     await cargarLotes();
   } catch (error) {
-    estado.textContent = "Error de red al validar el lote.";
+    setEstado("Error de red al validar el lote.", true);
   } finally {
     validarBtn.disabled = false;
   }

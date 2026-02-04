@@ -221,6 +221,16 @@ button:disabled {
   min-height: 20px;
 }
 
+.estado.error {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.estado.ok {
+  color: #0f766e;
+  font-weight: 600;
+}
+
 @media (max-width: 880px) {
   .grid {
     grid-template-columns: 1fr;

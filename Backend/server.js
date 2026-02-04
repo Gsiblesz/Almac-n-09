@@ -36,7 +36,7 @@ async function generarCodigoLote() {
 }
 
 app.post("/nuevo-lote", async (req, res) => {
-  const { productos } = req.body || {};
+  const { productos, codigo_lote } = req.body || {};
 
   if (!Array.isArray(productos) || productos.length === 0) {
     return res.status(400).send("Productos requeridos");
@@ -44,7 +44,19 @@ app.post("/nuevo-lote", async (req, res) => {
 
   const client = await pool.connect();
   try {
-    const codigoLote = await generarCodigoLote();
+    let codigoLote = codigo_lote ? String(codigo_lote).trim() : "";
+    if (codigoLote) {
+      const exists = await client.query(
+        "SELECT 1 FROM lotes WHERE codigo_lote = $1",
+        [codigoLote]
+      );
+      if (exists.rows.length > 0) {
+        await client.query("ROLLBACK");
+        return res.status(409).send("El código de lote ya existe");
+      }
+    } else {
+      codigoLote = await generarCodigoLote();
+    }
 
     await client.query("BEGIN");
     const loteResult = await client.query(
@@ -83,8 +95,7 @@ app.get("/lotes", async (req, res) => {
               JSON_AGG(
                 JSON_BUILD_OBJECT(
                   'id', lp.id,
-                  'codigo', lp.codigo,
-                  'cantidad', lp.cantidad
+                  'codigo', lp.codigo
                 )
                 ORDER BY lp.id
               ) AS productos
@@ -151,6 +162,80 @@ app.post("/validar-lote", async (req, res) => {
     if (mismatches.length > 0) {
       await client.query("ROLLBACK");
       return res.status(409).json({ ok: false, mismatches });
+    }
+
+    await client.query("DELETE FROM lotes WHERE id = $1", [loteId]);
+    await client.query("COMMIT");
+
+    res.json({ ok: true, message: "Lote validado. Pendiente de registrar en Sheets." });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    res.status(500).send("Error al validar el lote");
+  } finally {
+    client.release();
+  }
+});
+
+app.post("/validar-conteo", async (req, res) => {
+  const { codigo_lote, productos_y_cantidades } = req.body || {};
+
+  if (!codigo_lote || !Array.isArray(productos_y_cantidades) || productos_y_cantidades.length === 0) {
+    return res.status(400).send("Datos incompletos");
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const loteResult = await client.query(
+      "SELECT id FROM lotes WHERE codigo_lote = $1",
+      [codigo_lote]
+    );
+
+    if (loteResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).send("Lote no encontrado");
+    }
+
+    const loteId = loteResult.rows[0].id;
+
+    const productosResult = await client.query(
+      "SELECT codigo, cantidad FROM lote_productos WHERE lote_id = $1 ORDER BY id",
+      [loteId]
+    );
+
+    if (productosResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).send("Lote no encontrado");
+    }
+
+    const cantidadesMap = new Map();
+    for (const item of productos_y_cantidades) {
+      if (item.codigo && item.cantidad !== undefined) {
+        cantidadesMap.set(item.codigo, Number(item.cantidad));
+      }
+    }
+
+    let hayMismatch = false;
+    for (const producto of productosResult.rows) {
+      const recibido = cantidadesMap.get(producto.codigo);
+      if (recibido === undefined || Number.isNaN(recibido)) {
+        hayMismatch = true;
+        break;
+      }
+      if (Number(recibido) !== Number(producto.cantidad)) {
+        hayMismatch = true;
+        break;
+      }
+    }
+
+    if (hayMismatch) {
+      await client.query("ROLLBACK");
+      return res
+        .status(400)
+        .send(
+          "ERROR: Las cantidades no coinciden con el registro de Empaquetado. CUENTE DE NUEVO"
+        );
     }
 
     await client.query("DELETE FROM lotes WHERE id = $1", [loteId]);

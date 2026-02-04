@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú Principal</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="menu-page">
+        <div class="brand-corner">
+            <img src="BRAND.svg" alt="Brand" class="brand-logo-large">
+        </div>
+        <h1>Bienvenido</h1>
+        <p class="bienvenida">Selecciona el formulario que deseas completar</p>
+        <div class="menu-buttons-horizontal">
+            <a href="index.html#empaquetados" class="menu-btn empa-btn">EMPAQUETADOS</a>
+            <a href="index.html#merma" class="menu-btn merma-btn">MERMA</a>
+        </div>
+        <div class="menu-footer-corner">
+            <a href="#" class="footer-btn ajustes-btn" onclick="toggleAjustes(event)">Ajustes</a>
+            <a href="#" class="footer-btn" style="background:#2196f3;" onclick="openRegistros(event)">Registros</a>
+            <a href="#" class="footer-btn" style="background:#43e6b1; color:#23263a;" onclick="openProductos(event)">Productos</a>
+            <a href="#" class="footer-btn inicio-btn" onclick="location.reload()">Inicio</a>
+        </div>
+        <div id="panel-ajustes" class="apps-script-link" style="display:none; flex-direction:column; gap:12px;">
+            <strong>Configuración Backend</strong>
+            <label style="font-size:0.9rem; color:#bfc8e2;">Clave (para desbloquear la URL):</label>
+            <input id="input-key" type="password" placeholder="Ingresa la clave" style="width:100%; padding:10px 14px; border-radius:10px; border:1px solid #444; background:#23263a; color:#fff;">
+            <button class="footer-btn" style="padding:10px 12px; font-size:0.8rem; background:#ffb347; color:#23263a; width:max-content;" onclick="desbloquearURL()">Desbloquear URL</button>
+            <div id="url-block" style="display:none; flex-direction:column; gap:8px;">
+                <label style="font-size:0.9rem; color:#bfc8e2;">URL Apps Script (termina en /exec):</label>
+                <input id="input-webapp" type="text" placeholder="https://script.google.com/.../exec" style="width:100%; padding:10px 14px; border-radius:10px; border:1px solid #444; background:#23263a; color:#fff;">
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="footer-btn" style="padding:10px 16px; font-size:0.9rem;" onclick="guardarURL()">Guardar</button>
+                    <button class="footer-btn" style="padding:10px 16px; font-size:0.9rem; background:#2196f3;" onclick="probarConexion()">Probar conexión</button>
+                </div>
+            </div>
+            <button class="footer-btn" style="padding:10px 16px; font-size:0.9rem; background:#43e6b1; color:#23263a;" onclick="cerrarAjustes()">Cerrar</button>
+            <div id="resultado-prueba" style="margin-top:4px; font-size:0.85rem;"></div>
+            <p style="margin-top:8px; font-size:0.7rem; opacity:0.7;">La URL se guarda en localStorage y se aplica al cargar los formularios. La clave solo desbloquea la visibilidad.</p>
+        </div>
+        <div class="menu-credito" style="position:fixed; bottom:10px; left:14px; font-size:11px; color:#bfc8e2; opacity:0.65; pointer-events:none;">
+            Hecho por el Pasante de Producción Gerardo Siblesz
+        </div>
+    </div>
+    <script>
+    // Navegación directa a la pestaña correspondiente
+    document.querySelectorAll('.menu-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            if (href.includes('#')) {
+                const tab = href.split('#')[1];
+                localStorage.setItem('abrirTab', tab);
+            }
+        });
+    });
+
+    // Panel de ajustes dinámico
+    // Clave de administrador estática (solo control básico en cliente; no seguridad real).
+    const ADMIN_KEY = 'PASANTIAS90';
+    const DEFAULT_URL = "https://script.google.com/macros/s/AKfycbxn-tf1gi_efLVnSgletElQBSMgvn1Ma-SCET5sy48G2QGDpUs93gX5lsRjXA8vsP_9Sg/exec";
+    function isAdminUnlocked(){ try { return sessionStorage.getItem('ADMIN_UNLOCKED') === '1'; } catch(_) { return false; } }
+    function openProductos(e){
+        e.preventDefault();
+        if(isAdminUnlocked()) { window.location.href = 'productos.html'; return; }
+        // Solicitar clave: mostrar panel de ajustes y enfocar
+        const p = document.getElementById('panel-ajustes');
+        p.style.display = 'flex';
+        const res = document.getElementById('resultado-prueba');
+        res.textContent = 'Ingresa la clave para acceder a Productos';
+        res.style.color = '#ffb347';
+        try { sessionStorage.setItem('GOTO_PRODUCTOS','1'); } catch(_) {}
+        const keyInput = document.getElementById('input-key');
+        if(keyInput) keyInput.focus();
+    }
+    function openRegistros(e){
+        e.preventDefault();
+        if(isAdminUnlocked()) { window.location.href = 'registros.html'; return; }
+        const p = document.getElementById('panel-ajustes');
+        p.style.display = 'flex';
+        const res = document.getElementById('resultado-prueba');
+        res.textContent = 'Ingresa la clave para acceder a Registros';
+        res.style.color = '#ffb347';
+        try { sessionStorage.setItem('GOTO_REGISTROS','1'); } catch(_) {}
+        const keyInput = document.getElementById('input-key');
+        if(keyInput) keyInput.focus();
+    }
+    function toggleAjustes(e){
+        e.preventDefault();
+        const p=document.getElementById('panel-ajustes');
+        const wasHidden = p.style.display==='none';
+        p.style.display = wasHidden?'flex':'none';
+        if(wasHidden){
+            // Reset estado cada vez que se abre
+            document.getElementById('input-key').value='';
+            document.getElementById('resultado-prueba').textContent='';
+            ocultarBloqueURL();
+        }
+    }
+    function cerrarAjustes(){
+        document.getElementById('panel-ajustes').style.display='none';
+        document.getElementById('input-key').value='';
+        ocultarBloqueURL();
+    }
+    function cargarURL(){
+        const saved = localStorage.getItem('WEB_APP_URL_DYNAMIC');
+        const input = document.getElementById('input-webapp');
+        input.value = saved && saved.trim() ? saved.trim() : DEFAULT_URL;
+    }
+    function ocultarBloqueURL(){ const b=document.getElementById('url-block'); if(b) b.style.display='none'; }
+    function desbloquearURL(){
+        const keyIn = document.getElementById('input-key');
+        const key = (keyIn.value||'').trim();
+        if(!key){ mostrarResultado('Ingresa la clave', false); return; }
+        if(key !== ADMIN_KEY){ mostrarResultado('Clave incorrecta', false); return; }
+        const block = document.getElementById('url-block');
+        block.style.display='flex';
+        cargarURL();
+        mostrarResultado('Bloque desbloqueado', true);
+        try { sessionStorage.setItem('ADMIN_UNLOCKED','1'); } catch(_) {}
+        // Redirigir si venía del botón Productos
+        try {
+            if(sessionStorage.getItem('GOTO_PRODUCTOS') === '1'){
+                sessionStorage.removeItem('GOTO_PRODUCTOS');
+                window.location.href = 'productos.html';
+            }
+            if(sessionStorage.getItem('GOTO_REGISTROS') === '1'){
+                sessionStorage.removeItem('GOTO_REGISTROS');
+                window.location.href = 'registros.html';
+            }
+        } catch(_) {}
+    }
+        function guardarURL(){
+            // Sólo se permite guardar si el bloque está visible (clave correcta ingresada)
+            const block = document.getElementById('url-block');
+            if(block.style.display==='none'){ mostrarResultado('Primero desbloquea con la clave', false); return; }
+            const input = document.getElementById('input-webapp');
+            const url = input.value.trim();
+            if(!url){ mostrarResultado('Ingresa una URL válida', false); return; }
+            localStorage.setItem('WEB_APP_URL_DYNAMIC', url);
+            mostrarResultado('URL guardada', true);
+        }
+        function probarConexion(){
+            // Permite probar aunque el bloque esté oculto usando valor guardado
+            const blockVisible = document.getElementById('url-block').style.display!=='none';
+            let url = '';
+            if(blockVisible){ url = document.getElementById('input-webapp').value.trim(); }
+            if(!url){ url = (localStorage.getItem('WEB_APP_URL_DYNAMIC')||'').trim(); }
+            if(!url){ url = DEFAULT_URL; }
+            if(!url){ mostrarResultado('No hay URL: desbloquea y guarda primero', false); return; }
+            const pingUrl = url + (url.includes('?')?'&':'?') + 'ping=test';
+            mostrarResultado('Probando...', true);
+            fetch(pingUrl, { method:'GET', cache:'no-store' })
+                .then(r=> r.text())
+                .then(t=>{
+                    try{
+                        const j=JSON.parse(t);
+                        if(j.ok){ mostrarResultado('Conexión OK', true); }
+                        else { mostrarResultado('Respuesta recibida pero ok=false', false); }
+                    }catch(e){
+                        // Si no es JSON, intentamos en modo no-cors y asumimos OK si no falla
+                        fetch(pingUrl, { method:'GET', mode:'no-cors' })
+                          .then(()=> mostrarResultado('Conexión OK (modo no-cors)', true))
+                          .catch(err=> mostrarResultado('Failed to fetch (no-cors). Revisa permisos /exec. Detalle: ' + err, false));
+                    }
+                })
+                .catch(_=> {
+                    // Fallback: modo no-cors (algunos orígenes file:// o Pages limitan lectura de respuesta)
+                    fetch(pingUrl, { method:'GET', mode:'no-cors' })
+                      .then(()=> mostrarResultado('Conexión OK (modo no-cors)', true))
+                      .catch(err=> mostrarResultado('Failed to fetch. Verifica que el Web App esté desplegado como "Anyone" y la URL termine en /exec. Detalle: ' + err, false));
+                });
+        }
+    function mostrarResultado(msg, ok){ const el=document.getElementById('resultado-prueba'); el.textContent=msg; el.style.color= ok?'#43e6b1':'#ff7675'; }
+    </script>
+</body>
+</html>
