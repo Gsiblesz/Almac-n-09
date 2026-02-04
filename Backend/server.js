@@ -67,12 +67,15 @@ app.post("/nuevo-lote", async (req, res) => {
     const loteId = loteResult.rows[0].id;
 
     for (const item of productos) {
-      if (!item.codigo || !item.cantidad) {
-        throw new Error("Producto inválido");
+      const codigo = item && item.codigo ? String(item.codigo).trim() : "";
+      const cantidad = Number(item && item.cantidad);
+      if (!codigo || Number.isNaN(cantidad) || cantidad <= 0) {
+        await client.query("ROLLBACK");
+        return res.status(400).send("Producto inválido");
       }
       await client.query(
         "INSERT INTO lote_productos (lote_id, codigo, cantidad) VALUES ($1, $2, $3)",
-        [loteId, item.codigo, Number(item.cantidad)]
+        [loteId, codigo, cantidad]
       );
     }
 
