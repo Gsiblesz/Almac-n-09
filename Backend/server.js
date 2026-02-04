@@ -17,6 +17,7 @@ const staticDir = process.env.FRONTEND_DIR || path.join(__dirname, "..", "Fronte
 app.use(express.static(staticDir));
 
 const appsScriptUrl = process.env.APPS_SCRIPT_URL || "";
+const adminKey = process.env.ADMIN_KEY || "";
 
 function formatDDMMYY(date) {
   const dd = String(date.getDate()).padStart(2, "0");
@@ -303,6 +304,26 @@ app.post("/validar-conteo", async (req, res) => {
     res.status(500).send("Error al validar el lote");
   } finally {
     client.release();
+  }
+});
+
+app.post("/borrar-lotes", async (req, res) => {
+  const { key } = req.body || {};
+
+  if (!adminKey) {
+    return res.status(500).send("ADMIN_KEY no configurada");
+  }
+
+  if (!key || String(key).trim() !== adminKey) {
+    return res.status(401).send("Clave inválida");
+  }
+
+  try {
+    await pool.query("DELETE FROM lotes");
+    res.json({ ok: true, message: "Registros borrados." });
+  } catch (error) {
+    console.error("Error en /borrar-lotes:", error);
+    res.status(500).send("Error al borrar registros");
   }
 });
 

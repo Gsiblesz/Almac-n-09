@@ -10,6 +10,12 @@ const validarBtn = document.getElementById("validarBtn");
 const recargarBtn = document.getElementById("recargar");
 const btnEntradas = document.getElementById("btnEntradas");
 const btnSalidas = document.getElementById("btnSalidas");
+const btnAjustes = document.getElementById("btnAjustes");
+const panelAjustes = document.getElementById("panelAjustes");
+const adminKeyInput = document.getElementById("adminKey");
+const guardarClaveBtn = document.getElementById("guardarClave");
+const borrarRegistrosBtn = document.getElementById("borrarRegistros");
+const ajustesEstado = document.getElementById("ajustesEstado");
 
 let lotes = [];
 let loteActivo = null;
@@ -25,6 +31,12 @@ function setEstado(mensaje, esError = false) {
   estado.textContent = mensaje;
   estado.classList.toggle("error", esError);
   estado.classList.toggle("ok", !esError && Boolean(mensaje));
+}
+
+function setAjustesEstado(mensaje, esError = false) {
+  ajustesEstado.textContent = mensaje;
+  ajustesEstado.classList.toggle("error", esError);
+  ajustesEstado.classList.toggle("ok", !esError && Boolean(mensaje));
 }
 
 function limpiarInputs() {
@@ -210,5 +222,51 @@ validacionForm.addEventListener("submit", async (event) => {
 recargarBtn.addEventListener("click", cargarLotes);
 btnEntradas.addEventListener("click", () => setModo("entradas"));
 btnSalidas.addEventListener("click", () => setModo("salidas"));
+
+btnAjustes.addEventListener("click", () => {
+  panelAjustes.hidden = !panelAjustes.hidden;
+  if (!panelAjustes.hidden) {
+    const stored = localStorage.getItem("ADMIN_KEY") || "";
+    adminKeyInput.value = stored;
+  }
+});
+
+guardarClaveBtn.addEventListener("click", () => {
+  localStorage.setItem("ADMIN_KEY", adminKeyInput.value.trim());
+  setAjustesEstado("Clave guardada.");
+});
+
+borrarRegistrosBtn.addEventListener("click", async () => {
+  const key = (adminKeyInput.value || "").trim();
+  if (!key) {
+    setAjustesEstado("Ingresa la clave.", true);
+    return;
+  }
+  const ok = confirm("¿Seguro que deseas borrar todos los registros?");
+  if (!ok) return;
+
+  try {
+    borrarRegistrosBtn.disabled = true;
+    setAjustesEstado("Borrando...");
+    const response = await fetch(`${API_BASE}/borrar-lotes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key }),
+    });
+
+    const text = await response.text();
+    if (!response.ok) {
+      setAjustesEstado(text || "Error al borrar.", true);
+      return;
+    }
+
+    setAjustesEstado("Registros borrados.");
+    await cargarLotes();
+  } catch (error) {
+    setAjustesEstado("Error de red al borrar.", true);
+  } finally {
+    borrarRegistrosBtn.disabled = false;
+  }
+});
 
 cargarLotes();

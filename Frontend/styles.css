@@ -211,6 +211,11 @@ button.secondary {
   color: #2f3f7c;
 }
 
+button.danger {
+  background: #dc2626;
+  color: #fff;
+}
+
 button:disabled {
   background: #8aa9f4;
   cursor: not-allowed;
@@ -229,6 +234,16 @@ button:disabled {
 .estado {
   margin-top: 16px;
   min-height: 20px;
+}
+
+.ajustes {
+  margin-top: 24px;
+}
+
+.ajustes-row {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .estado.error {
