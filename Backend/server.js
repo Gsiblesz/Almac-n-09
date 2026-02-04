@@ -16,6 +16,8 @@ const __dirname = path.dirname(__filename);
 const staticDir = process.env.FRONTEND_DIR || path.join(__dirname, "..", "Frontend");
 app.use(express.static(staticDir));
 
+const appsScriptUrl = process.env.APPS_SCRIPT_URL || "";
+
 function formatDDMMYY(date) {
   const dd = String(date.getDate()).padStart(2, "0");
   const mm = String(date.getMonth() + 1).padStart(2, "0");
@@ -33,6 +35,41 @@ async function generarCodigoLote() {
 
   const correlativo = String(Number(result.rows[0].total) + 1).padStart(2, "0");
   return `BC${fechaClave}${correlativo}`;
+}
+
+async function registrarEnSheets(codigoLote, productos) {
+  if (!appsScriptUrl) {
+    throw new Error("APPS_SCRIPT_URL no configurada");
+  }
+
+  const fechaEntrada = new Date().toISOString();
+
+  for (const producto of productos) {
+    const payload = {
+      numero_lote: codigoLote,
+      producto: producto.descripcion || producto.codigo,
+      cantidad_almacen: producto.recibido,
+      fecha_entrada: fechaEntrada,
+    };
+
+    const response = await fetch(appsScriptUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await response.text();
+    let data = null;
+    try {
+      data = JSON.parse(text);
+    } catch (_) {
+      data = null;
+    }
+
+    if (!response.ok || !data || data.ok !== true) {
+      throw new Error(text || "Error al registrar en Sheets");
+    }
+  }
 }
 
 app.post("/nuevo-lote", async (req, res) => {
@@ -68,14 +105,15 @@ app.post("/nuevo-lote", async (req, res) => {
 
     for (const item of productos) {
       const codigo = item && item.codigo ? String(item.codigo).trim() : "";
+      const descripcion = item && item.descripcion ? String(item.descripcion).trim() : "";
       const cantidad = Number(item && item.cantidad);
       if (!codigo || Number.isNaN(cantidad) || cantidad <= 0) {
         await client.query("ROLLBACK");
         return res.status(400).send("Producto inválido");
       }
       await client.query(
-        "INSERT INTO lote_productos (lote_id, codigo, cantidad) VALUES ($1, $2, $3)",
-        [loteId, codigo, cantidad]
+        "INSERT INTO lote_productos (lote_id, codigo, descripcion, cantidad) VALUES ($1, $2, $3, $4)",
+        [loteId, codigo, descripcion || null, cantidad]
       );
     }
 
@@ -99,7 +137,8 @@ app.get("/lotes", async (req, res) => {
               JSON_AGG(
                 JSON_BUILD_OBJECT(
                   'id', lp.id,
-                  'codigo', lp.codigo
+                  'codigo', lp.codigo,
+                  'descripcion', lp.descripcion
                 )
                 ORDER BY lp.id
               ) AS productos
@@ -206,7 +245,7 @@ app.post("/validar-conteo", async (req, res) => {
     const loteId = loteResult.rows[0].id;
 
     const productosResult = await client.query(
-      "SELECT codigo, cantidad FROM lote_productos WHERE lote_id = $1 ORDER BY id",
+      "SELECT codigo, descripcion, cantidad FROM lote_productos WHERE lote_id = $1 ORDER BY id",
       [loteId]
     );
 
@@ -223,6 +262,7 @@ app.post("/validar-conteo", async (req, res) => {
     }
 
     let hayMismatch = false;
+    const productosParaSheets = [];
     for (const producto of productosResult.rows) {
       const recibido = cantidadesMap.get(producto.codigo);
       if (recibido === undefined || Number.isNaN(recibido)) {
@@ -233,6 +273,12 @@ app.post("/validar-conteo", async (req, res) => {
         hayMismatch = true;
         break;
       }
+
+      productosParaSheets.push({
+        codigo: producto.codigo,
+        descripcion: producto.descripcion || "",
+        recibido,
+      });
     }
 
     if (hayMismatch) {
@@ -244,6 +290,7 @@ app.post("/validar-conteo", async (req, res) => {
         );
     }
 
+    await registrarEnSheets(codigo_lote, productosParaSheets);
     await client.query("DELETE FROM lotes WHERE id = $1", [loteId]);
     await client.query("COMMIT");
 

@@ -63,9 +63,10 @@ function renderLotes() {
     const item = crearElemento("li", "lote-item");
     const button = crearElemento("button", "lote-btn");
     button.type = "button";
+    const fechaLote = new Date(lote.created_at).toLocaleString();
     button.innerHTML = `
-      <span class="lote-codigo">${lote.codigo_lote}</span>
-      <span class="lote-meta">${new Date(lote.created_at).toLocaleString()}</span>
+      <span class="lote-codigo">${fechaLote}</span>
+      <span class="lote-meta">${lote.codigo_lote}</span>
     `;
     if (loteActivo && loteActivo.id === lote.id) {
       button.classList.add("activo");
@@ -94,6 +95,8 @@ function renderDetalle() {
     const info = crearElemento("div", "producto-info");
     info.innerHTML = `
       <div class="producto-codigo">${producto.codigo}</div>
+      <div class="producto-descripcion">${producto.descripcion || ""}</div>
+      <div class="producto-lote">Lote: ${loteActivo.codigo_lote}</div>
     `;
 
     const inputWrap = crearElemento("div", "producto-input");

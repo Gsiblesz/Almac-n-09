@@ -26,8 +26,9 @@ function generarNonce() {
 
 async function registrarLoteBackend(seleccionados, codigoLote) {
     const productos = (seleccionados || []).map(item => ({
-        codigo: item.codigo,
-        cantidad: item.cantidad
+    codigo: item.codigo,
+    descripcion: item.descripcion || "",
+    cantidad: item.cantidad
     }));
 
     if (!productos.length) return;

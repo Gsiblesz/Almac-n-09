@@ -8,5 +8,6 @@ CREATE TABLE IF NOT EXISTS lote_productos (
   id SERIAL PRIMARY KEY,
   lote_id INTEGER NOT NULL REFERENCES lotes(id) ON DELETE CASCADE,
   codigo VARCHAR(50) NOT NULL,
+  descripcion VARCHAR(255),
   cantidad INTEGER NOT NULL
 );
