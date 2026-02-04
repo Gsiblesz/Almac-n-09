@@ -28,7 +28,8 @@ async function registrarLoteBackend(seleccionados, codigoLote) {
     const productos = (seleccionados || []).map(item => ({
     codigo: item.codigo,
     descripcion: item.descripcion || "",
-    cantidad: item.cantidad
+    cantidad: item.cantidad,
+    lote: item.lote || ""
     }));
 
     if (!productos.length) return;

@@ -93,10 +93,11 @@ function renderDetalle() {
     const row = crearElemento("div", "producto-row");
 
     const info = crearElemento("div", "producto-info");
+    const loteProducto = producto.lote_producto || loteActivo.codigo_lote;
     info.innerHTML = `
       <div class="producto-codigo">${producto.codigo}</div>
       <div class="producto-descripcion">${producto.descripcion || ""}</div>
-      <div class="producto-lote">Lote: ${loteActivo.codigo_lote}</div>
+      <div class="producto-lote">Lote: ${loteProducto}</div>
     `;
 
     const inputWrap = crearElemento("div", "producto-input");

@@ -106,14 +106,15 @@ app.post("/nuevo-lote", async (req, res) => {
     for (const item of productos) {
       const codigo = item && item.codigo ? String(item.codigo).trim() : "";
       const descripcion = item && item.descripcion ? String(item.descripcion).trim() : "";
+      const loteProducto = item && item.lote ? String(item.lote).trim() : "";
       const cantidad = Number(item && item.cantidad);
       if (!codigo || Number.isNaN(cantidad) || cantidad <= 0) {
         await client.query("ROLLBACK");
         return res.status(400).send("Producto inválido");
       }
       await client.query(
-        "INSERT INTO lote_productos (lote_id, codigo, descripcion, cantidad) VALUES ($1, $2, $3, $4)",
-        [loteId, codigo, descripcion || null, cantidad]
+        "INSERT INTO lote_productos (lote_id, codigo, descripcion, lote_producto, cantidad) VALUES ($1, $2, $3, $4, $5)",
+        [loteId, codigo, descripcion || null, loteProducto || null, cantidad]
       );
     }
 
@@ -138,7 +139,8 @@ app.get("/lotes", async (req, res) => {
                 JSON_BUILD_OBJECT(
                   'id', lp.id,
                   'codigo', lp.codigo,
-                  'descripcion', lp.descripcion
+                  'descripcion', lp.descripcion,
+                  'lote_producto', lp.lote_producto
                 )
                 ORDER BY lp.id
               ) AS productos
