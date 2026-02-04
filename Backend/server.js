@@ -327,6 +327,30 @@ app.post("/borrar-lotes", async (req, res) => {
   }
 });
 
+app.post("/borrar-registros", async (req, res) => {
+  const { key, ids } = req.body || {};
+
+  if (!adminKey) {
+    return res.status(500).send("ADMIN_KEY no configurada");
+  }
+
+  if (!key || String(key).trim() !== adminKey) {
+    return res.status(401).send("Clave inválida");
+  }
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).send("Ids requeridos");
+  }
+
+  try {
+    await pool.query("DELETE FROM lotes WHERE id = ANY($1::int[])", [ids]);
+    res.json({ ok: true, message: "Registros borrados." });
+  } catch (error) {
+    console.error("Error en /borrar-registros:", error);
+    res.status(500).send("Error al borrar registros");
+  }
+});
+
 app.get("/health", (req, res) => {
   res.json({ ok: true });
 });

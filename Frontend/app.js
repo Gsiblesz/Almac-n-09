@@ -14,6 +14,7 @@ const btnAjustes = document.getElementById("btnAjustes");
 const panelAjustes = document.getElementById("panelAjustes");
 const adminKeyInput = document.getElementById("adminKey");
 const guardarClaveBtn = document.getElementById("guardarClave");
+const borrarSeleccionadosBtn = document.getElementById("borrarSeleccionados");
 const borrarRegistrosBtn = document.getElementById("borrarRegistros");
 const ajustesEstado = document.getElementById("ajustesEstado");
 
@@ -79,6 +80,9 @@ function renderLotes() {
 
   lotes.forEach((lote) => {
     const item = crearElemento("li", "lote-item");
+    const checkbox = crearElemento("input", "lote-check");
+    checkbox.type = "checkbox";
+    checkbox.value = lote.id;
     const button = crearElemento("button", "lote-btn");
     button.type = "button";
     const fechaLote = new Date(lote.created_at).toLocaleString();
@@ -90,6 +94,7 @@ function renderLotes() {
       button.classList.add("activo");
     }
     button.addEventListener("click", () => seleccionarLote(lote.id));
+    item.appendChild(checkbox);
     item.appendChild(button);
     loteList.appendChild(item);
   });
@@ -112,9 +117,10 @@ function renderDetalle() {
 
     const info = crearElemento("div", "producto-info");
     const loteProducto = producto.lote_producto || loteActivo.codigo_lote;
+    const nombreProducto = producto.descripcion || producto.codigo;
     info.innerHTML = `
       <div class="producto-codigo">${producto.codigo}</div>
-      <div class="producto-descripcion">${producto.descripcion || ""}</div>
+      <div class="producto-descripcion">${nombreProducto}</div>
       <div class="producto-lote">Lote: ${loteProducto}</div>
     `;
 
@@ -266,6 +272,49 @@ borrarRegistrosBtn.addEventListener("click", async () => {
     setAjustesEstado("Error de red al borrar.", true);
   } finally {
     borrarRegistrosBtn.disabled = false;
+  }
+});
+
+borrarSeleccionadosBtn.addEventListener("click", async () => {
+  const key = (adminKeyInput.value || "").trim();
+  if (!key) {
+    setAjustesEstado("Ingresa la clave.", true);
+    return;
+  }
+
+  const seleccionados = Array.from(document.querySelectorAll(".lote-check:checked"))
+    .map((input) => Number(input.value))
+    .filter((id) => Number.isFinite(id));
+
+  if (!seleccionados.length) {
+    setAjustesEstado("Selecciona al menos un registro.", true);
+    return;
+  }
+
+  const ok = confirm("¿Borrar los registros seleccionados?");
+  if (!ok) return;
+
+  try {
+    borrarSeleccionadosBtn.disabled = true;
+    setAjustesEstado("Borrando...");
+    const response = await fetch(`${API_BASE}/borrar-registros`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, ids: seleccionados }),
+    });
+
+    const text = await response.text();
+    if (!response.ok) {
+      setAjustesEstado(text || "Error al borrar.", true);
+      return;
+    }
+
+    setAjustesEstado("Registros borrados.");
+    await cargarLotes();
+  } catch (error) {
+    setAjustesEstado("Error de red al borrar.", true);
+  } finally {
+    borrarSeleccionadosBtn.disabled = false;
   }
 });
 
