@@ -83,6 +83,7 @@ app.post("/nuevo-lote", async (req, res) => {
     res.json({ codigo_lote: codigoLote });
   } catch (error) {
     await client.query("ROLLBACK");
+    console.error("Error en /nuevo-lote:", error);
     res.status(500).send("Error al crear el lote");
   } finally {
     client.release();
@@ -110,6 +111,7 @@ app.get("/lotes", async (req, res) => {
 
     res.json(result.rows);
   } catch (error) {
+    console.error("Error en /lotes:", error);
     res.status(500).send("Error al listar lotes");
   }
 });
@@ -173,6 +175,7 @@ app.post("/validar-lote", async (req, res) => {
     res.json({ ok: true, message: "Lote validado. Pendiente de registrar en Sheets." });
   } catch (error) {
     await client.query("ROLLBACK");
+    console.error("Error en /validar-lote:", error);
     res.status(500).send("Error al validar el lote");
   } finally {
     client.release();
@@ -247,6 +250,7 @@ app.post("/validar-conteo", async (req, res) => {
     res.json({ ok: true, message: "Lote validado. Pendiente de registrar en Sheets." });
   } catch (error) {
     await client.query("ROLLBACK");
+    console.error("Error en /validar-conteo:", error);
     res.status(500).send("Error al validar el lote");
   } finally {
     client.release();
