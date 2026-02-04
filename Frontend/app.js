@@ -15,6 +15,12 @@ let lotes = [];
 let loteActivo = null;
 let modo = "entradas";
 
+function getRegistroLabel(loteId) {
+  const index = lotes.findIndex((lote) => lote.id === loteId);
+  const numero = String(index + 1).padStart(5, "0");
+  return `Registro ${numero}`;
+}
+
 function setEstado(mensaje, esError = false) {
   estado.textContent = mensaje;
   estado.classList.toggle("error", esError);
@@ -65,8 +71,8 @@ function renderLotes() {
     button.type = "button";
     const fechaLote = new Date(lote.created_at).toLocaleString();
     button.innerHTML = `
-      <span class="lote-codigo">${fechaLote}</span>
-      <span class="lote-meta">${lote.codigo_lote}</span>
+      <span class="lote-codigo">${getRegistroLabel(lote.id)}</span>
+      <span class="lote-meta">${fechaLote}</span>
     `;
     if (loteActivo && loteActivo.id === lote.id) {
       button.classList.add("activo");
@@ -82,12 +88,12 @@ function renderDetalle() {
   setEstado("");
 
   if (!loteActivo) {
-    detalleTitulo.textContent = "Selecciona un lote";
+    detalleTitulo.textContent = "Selecciona un registro";
     validarBtn.disabled = true;
     return;
   }
 
-  detalleTitulo.textContent = `Lote ${loteActivo.codigo_lote}`;
+  detalleTitulo.textContent = getRegistroLabel(loteActivo.id);
 
   loteActivo.productos.forEach((producto) => {
     const row = crearElemento("div", "producto-row");
