@@ -127,6 +127,14 @@ h1 {
   width: 100%;
 }
 
+.lote-list:not(.ajustes-activo) .lote-item {
+  grid-template-columns: 1fr;
+}
+
+.lote-list:not(.ajustes-activo) .lote-check {
+  display: none;
+}
+
 .lote-check {
   width: 18px;
   height: 18px;

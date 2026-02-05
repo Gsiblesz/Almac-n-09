@@ -70,6 +70,7 @@ function crearElemento(tag, className, text) {
 
 function renderLotes() {
   loteList.innerHTML = "";
+  loteList.classList.toggle("ajustes-activo", !panelAjustes.hidden);
 
   if (!lotes.length) {
     loteVacio.style.display = "block";
