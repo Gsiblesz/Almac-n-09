@@ -17,6 +17,8 @@ const guardarClaveBtn = document.getElementById("guardarClave");
 const borrarSeleccionadosBtn = document.getElementById("borrarSeleccionados");
 const borrarRegistrosBtn = document.getElementById("borrarRegistros");
 const ajustesEstado = document.getElementById("ajustesEstado");
+const erroresConteoTotal = document.getElementById("erroresConteoTotal");
+const erroresConteoLista = document.getElementById("erroresConteoLista");
 
 let lotes = [];
 let loteActivo = null;
@@ -38,6 +40,41 @@ function setAjustesEstado(mensaje, esError = false) {
   ajustesEstado.textContent = mensaje;
   ajustesEstado.classList.toggle("error", esError);
   ajustesEstado.classList.toggle("ok", !esError && Boolean(mensaje));
+}
+
+async function cargarErroresConteo() {
+  const key = (adminKeyInput.value || "").trim();
+  if (!key) {
+    erroresConteoTotal.textContent = "Ingresa la clave para ver errores.";
+    erroresConteoLista.innerHTML = "";
+    return;
+  }
+
+  erroresConteoTotal.textContent = "Cargando...";
+  erroresConteoLista.innerHTML = "";
+
+  try {
+    const response = await fetch(`${API_BASE}/errores-conteo?key=${encodeURIComponent(key)}`);
+    if (!response.ok) {
+      const text = await response.text();
+      erroresConteoTotal.textContent = text || "Error al consultar";
+      return;
+    }
+
+    const data = await response.json();
+    const total = data.total || 0;
+    erroresConteoTotal.textContent = `Total hoy: ${total}`;
+    if (Array.isArray(data.items) && data.items.length) {
+      data.items.forEach((item) => {
+        const li = document.createElement("li");
+        const fecha = new Date(item.created_at).toLocaleString();
+        li.textContent = `${fecha} · ${item.codigo_lote || "Sin lote"}`;
+        erroresConteoLista.appendChild(li);
+      });
+    }
+  } catch (error) {
+    erroresConteoTotal.textContent = "Error de red al consultar";
+  }
 }
 
 function limpiarInputs() {
@@ -238,6 +275,7 @@ btnAjustes.addEventListener("click", () => {
   if (!panelAjustes.hidden) {
     const stored = localStorage.getItem("ADMIN_KEY") || "";
     adminKeyInput.value = stored;
+    cargarErroresConteo();
   }
   renderLotes();
 });
@@ -245,6 +283,7 @@ btnAjustes.addEventListener("click", () => {
 guardarClaveBtn.addEventListener("click", () => {
   localStorage.setItem("ADMIN_KEY", adminKeyInput.value.trim());
   setAjustesEstado("Clave guardada.");
+  cargarErroresConteo();
 });
 
 borrarRegistrosBtn.addEventListener("click", async () => {

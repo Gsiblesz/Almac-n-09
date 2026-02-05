@@ -73,6 +73,17 @@ async function registrarEnSheets(codigoLote, productos) {
   }
 }
 
+async function registrarErrorConteo(codigoLote) {
+  try {
+    await pool.query(
+      "INSERT INTO conteo_errores (codigo_lote) VALUES ($1)",
+      [codigoLote || null]
+    );
+  } catch (error) {
+    console.error("Error al registrar conteo_errores:", error);
+  }
+}
+
 app.post("/nuevo-lote", async (req, res) => {
   const { productos, codigo_lote } = req.body || {};
 
@@ -286,6 +297,7 @@ app.post("/validar-conteo", async (req, res) => {
 
     if (hayMismatch) {
       await client.query("ROLLBACK");
+      await registrarErrorConteo(codigo_lote);
       return res
         .status(400)
         .send(
@@ -348,6 +360,45 @@ app.post("/borrar-registros", async (req, res) => {
   } catch (error) {
     console.error("Error en /borrar-registros:", error);
     res.status(500).send("Error al borrar registros");
+  }
+});
+
+app.get("/errores-conteo", async (req, res) => {
+  const { date, key } = req.query || {};
+  const targetDate = date ? String(date) : null;
+
+  if (!adminKey) {
+    return res.status(500).send("ADMIN_KEY no configurada");
+  }
+
+  if (!key || String(key).trim() !== adminKey) {
+    return res.status(401).send("Clave inválida");
+  }
+
+  try {
+    const params = [];
+    let where = "created_at::date = CURRENT_DATE";
+    if (targetDate) {
+      where = "created_at::date = $1";
+      params.push(targetDate);
+    }
+
+    const result = await pool.query(
+      `SELECT id, codigo_lote, created_at
+       FROM conteo_errores
+       WHERE ${where}
+       ORDER BY created_at DESC`,
+      params
+    );
+
+    res.json({
+      ok: true,
+      total: result.rows.length,
+      items: result.rows,
+    });
+  } catch (error) {
+    console.error("Error en /errores-conteo:", error);
+    res.status(500).send("Error al consultar errores");
   }
 });
 
