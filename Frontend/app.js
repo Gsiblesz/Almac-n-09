@@ -83,6 +83,9 @@ function renderLotes() {
     const checkbox = crearElemento("input", "lote-check");
     checkbox.type = "checkbox";
     checkbox.value = lote.id;
+    if (panelAjustes.hidden) {
+      checkbox.hidden = true;
+    }
     const button = crearElemento("button", "lote-btn");
     button.type = "button";
     const fechaLote = new Date(lote.created_at).toLocaleString();
@@ -235,6 +238,7 @@ btnAjustes.addEventListener("click", () => {
     const stored = localStorage.getItem("ADMIN_KEY") || "";
     adminKeyInput.value = stored;
   }
+  renderLotes();
 });
 
 guardarClaveBtn.addEventListener("click", () => {
