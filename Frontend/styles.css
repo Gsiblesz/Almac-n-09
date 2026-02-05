@@ -121,6 +121,7 @@ h1 {
   grid-template-columns: 20px 1fr;
   gap: 8px;
   align-items: center;
+  width: 100%;
 }
 
 .lote-check {
