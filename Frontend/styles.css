@@ -109,6 +109,7 @@ h1 {
   border: 1px solid #dbe0ea;
   border-radius: 10px;
   padding: 12px 14px;
+  color: #1d2433;
   display: grid;
   gap: 6px;
   cursor: pointer;
