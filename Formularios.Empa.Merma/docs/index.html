@@ -179,7 +179,15 @@
                 const r = await fetch(url, {method:'GET', cache:'no-store'});
                 const text = await r.text();
                 const j = JSON.parse(text);
-                PRODUCTOS_CACHE = Array.isArray(j.products) ? j.products.map(p=>({codigo:p.codigo, desc:p.descripcion, unidad:p.unidad})) : [];
+                PRODUCTOS_CACHE = Array.isArray(j.products)
+                    ? j.products.map(p=>({
+                        codigo:p.codigo,
+                        desc:p.descripcion,
+                        unidad:p.unidad,
+                        paquetes:p.paquetes,
+                        sobre_piso:p.sobre_piso
+                    }))
+                    : [];
             } catch(e){ PRODUCTOS_CACHE = []; }
             return PRODUCTOS_CACHE;
         }
