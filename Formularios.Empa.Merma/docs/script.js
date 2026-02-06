@@ -29,6 +29,8 @@ async function registrarLoteBackend(seleccionados, codigoLote) {
     codigo: item.codigo,
     descripcion: item.descripcion || "",
     cantidad: item.cantidad,
+    paquetes: item.paquetes || "",
+    sobre_piso: item.sobre_piso || item.sobrePiso || "",
     lote: item.lote || ""
     }));
 
@@ -144,6 +146,8 @@ function enviarFormulario(formId, url) {
                         descripcion: inp.dataset.desc || '',
                         unidad: inp.dataset.unidad || '',
                         cantidad: val,
+                        paquetes: inp.dataset.paquetes || '',
+                        sobre_piso: inp.dataset.sobrePiso || inp.dataset.sobre_piso || '',
                         motivo: motivoVal,
                         lote: loteVal
                     });

@@ -246,7 +246,10 @@
                         <input type="number" min="1" step="1" class="prod-qty" placeholder="0"
                             data-codigo="${p.codigo}"
                             data-desc="${(p.desc||'').replace(/"/g,'&quot;')}"
-                            data-unidad="${p.unidad}" name="qty_${p.codigo}">
+                            data-unidad="${p.unidad}"
+                            data-paquetes="${p.paquetes || ''}"
+                            data-sobre-piso="${p.sobre_piso || ''}"
+                            name="qty_${p.codigo}">
                         ${isMerma ? `<select class="merma-motivo select" style="min-width:210px;">${opcionesMotivoHTML()}</select>
                         <input type="text" class="merma-lote" placeholder="Lote" style="min-width:120px;"/>` : `<input type="text" class="empa-lote" placeholder="Lote" style="min-width:140px;"/>`}
                         <button type="button" class="remove-sel">✕</button>

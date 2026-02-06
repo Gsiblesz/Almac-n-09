@@ -159,10 +159,12 @@ function renderDetalle() {
     const info = crearElemento("div", "producto-info");
     const loteProducto = producto.lote_producto || loteActivo.codigo_lote;
     const nombreProducto = producto.descripcion || producto.codigo;
+    const cestas = producto.cestas_calculadas;
     info.innerHTML = `
       <div class="producto-codigo">${producto.codigo}</div>
       <div class="producto-descripcion">${nombreProducto}</div>
       <div class="producto-lote">Lote: ${loteProducto}</div>
+      ${cestas !== null && cestas !== undefined ? `<div class="producto-cestas">Cestas: ${cestas}</div>` : ''}
     `;
 
     const inputWrap = crearElemento("div", "producto-input");

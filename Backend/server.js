@@ -119,14 +119,22 @@ app.post("/nuevo-lote", async (req, res) => {
       const codigo = item && item.codigo ? String(item.codigo).trim() : "";
       const descripcion = item && item.descripcion ? String(item.descripcion).trim() : "";
       const loteProducto = item && item.lote ? String(item.lote).trim() : "";
+      const paquetes = Number(item && item.paquetes);
+      const sobrePiso = Number(item && (item.sobre_piso ?? item.sobrePiso));
       const cantidad = Number(item && item.cantidad);
       if (!codigo || Number.isNaN(cantidad) || cantidad <= 0) {
         await client.query("ROLLBACK");
         return res.status(400).send("Producto inválido");
       }
+      const paquetesValidos = Number.isNaN(paquetes) ? null : paquetes;
+      const sobrePisoValido = Number.isNaN(sobrePiso) ? null : sobrePiso;
+      const cestasCalc = paquetesValidos && paquetesValidos > 0
+        ? Math.ceil(cantidad / paquetesValidos) + (sobrePisoValido || 0)
+        : null;
+
       await client.query(
-        "INSERT INTO lote_productos (lote_id, codigo, descripcion, lote_producto, cantidad) VALUES ($1, $2, $3, $4, $5)",
-        [loteId, codigo, descripcion || null, loteProducto || null, cantidad]
+        "INSERT INTO lote_productos (lote_id, codigo, descripcion, lote_producto, paquetes, sobre_piso, cestas_calculadas, cantidad) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        [loteId, codigo, descripcion || null, loteProducto || null, paquetesValidos, sobrePisoValido, cestasCalc, cantidad]
       );
     }
 
@@ -152,7 +160,8 @@ app.get("/lotes", async (req, res) => {
                   'id', lp.id,
                   'codigo', lp.codigo,
                   'descripcion', lp.descripcion,
-                  'lote_producto', lp.lote_producto
+                  'lote_producto', lp.lote_producto,
+                  'cestas_calculadas', lp.cestas_calculadas
                 )
                 ORDER BY lp.id
               ) AS productos
@@ -259,7 +268,7 @@ app.post("/validar-conteo", async (req, res) => {
     const loteId = loteResult.rows[0].id;
 
     const productosResult = await client.query(
-      "SELECT codigo, descripcion, cantidad FROM lote_productos WHERE lote_id = $1 ORDER BY id",
+      "SELECT codigo, descripcion, cantidad, cestas_calculadas FROM lote_productos WHERE lote_id = $1 ORDER BY id",
       [loteId]
     );
 

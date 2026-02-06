@@ -3,7 +3,7 @@ const SPREADSHEET_ID = '1mrBkcP3Wz04KfBxmNXP0tn6GI645lKctT095uW43ezw';
 const SHEETS = { Empaquetado: 'EMPAQUETADO', Merma: 'MERMA' };
 
 const PRODUCT_SHEET = 'PRODUCTOS';
-const PRODUCT_HEADERS = ['CODIGOS', 'DESCRIPCION', 'Unidad_Primaria'];
+const PRODUCT_HEADERS = ['CODIGOS', 'DESCRIPCION', 'Unidad_Primaria', 'PAQUETES', 'CESTAS', 'SOBRE_PISO'];
 
 const ADMIN_KEY = 'PASANTIAS90';
 const TZ = 'America/Caracas';
@@ -64,7 +64,8 @@ function doPost(e) {
         'SEDE',
         'FORMULA 1',
         'FORMULA 2',
-        'NUMERO DE LOTE'
+        'NUMERO DE LOTE',
+        'CESTAS_CALCULADAS'
       ];
   const colCount = ensureHeaderFull(sh, desiredHeader);
   normalizeTables(sh, desiredHeader);
@@ -81,24 +82,29 @@ function doPost(e) {
       if (productos.length) {
         productos.forEach(it => {
           const loteItem = (it && it.lote) ? String(it.lote).trim() : loteGlobal;
+          const paquetes = toNumber(it && it.paquetes);
+          const sobrePiso = toNumber(it && it.sobre_piso);
+          const cantidad = toNumber(it && it.cantidad);
+          const cestasCalc = paquetes > 0 ? (Math.ceil(cantidad / paquetes) + sobrePiso) : '';
           let r = [
             marcaTemporal,
             direccionValor,
             fecha,
             it.descripcion || it.codigo || '',
-            toNumber(it.cantidad),
+            cantidad,
             entregado,
             registro,
             responsable,
             sede,
             '',
             '',
-            loteItem || ''
+            loteItem || '',
+            cestasCalc
           ];
           rows.push(fitRow(r, writeCols));
         });
       } else {
-        let r = [marcaTemporal, direccionValor, fecha, '', 0, entregado, registro, responsable, sede, '', '', ''];
+        let r = [marcaTemporal, direccionValor, fecha, '', 0, entregado, registro, responsable, sede, '', '', '', ''];
         rows.push(fitRow(r, writeCols));
       }
 
@@ -242,12 +248,18 @@ function getProductosEndpoint() {
   const idxCodigo = headers.findIndex(h => String(h).toUpperCase() === 'CODIGOS');
   const idxDesc   = headers.findIndex(h => String(h).toUpperCase() === 'DESCRIPCION');
   const idxUnidad = headers.findIndex(h => String(h).toUpperCase() === 'UNIDAD_PRIMARIA');
+  const idxPaquetes = headers.findIndex(h => String(h).toUpperCase() === 'PAQUETES');
+  const idxCestas = headers.findIndex(h => String(h).toUpperCase() === 'CESTAS');
+  const idxSobrePiso = headers.findIndex(h => String(h).toUpperCase().replace(/\s+/g,'_') === 'SOBRE_PISO');
 
   const values = sh.getRange(2,1,lastRow-1,sh.getLastColumn()).getValues();
   const products = values.map(r => ({
     codigo: String(idxCodigo >=0 ? r[idxCodigo] : '').trim(),
     descripcion: String(idxDesc >=0 ? r[idxDesc] : '').trim(),
-    unidad: String(idxUnidad >=0 ? r[idxUnidad] : '').trim()
+    unidad: String(idxUnidad >=0 ? r[idxUnidad] : '').trim(),
+    paquetes: String(idxPaquetes >=0 ? r[idxPaquetes] : '').trim(),
+    cestas: String(idxCestas >=0 ? r[idxCestas] : '').trim(),
+    sobre_piso: String(idxSobrePiso >=0 ? r[idxSobrePiso] : '').trim()
   })).filter(p => p.codigo || p.descripcion);
 
   const resp = { ok:true, products };
