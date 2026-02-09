@@ -4,6 +4,8 @@ const SHEET_NAME = "Entradas09";
 function norm_(value) {
   return String(value || "")
     .trim()
+    .replace(/\u00A0/g, " ")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
     .replace(/\s+/g, " ")
     .toUpperCase();
 }
@@ -11,7 +13,7 @@ function norm_(value) {
 function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents || "{}");
-    const { numero_lote, producto, cantidad_almacen, fecha_entrada, cestas_calculadas } = payload;
+    const { numero_lote, producto, cantidad_almacen, fecha_entrada } = payload;
 
     if (!numero_lote || !producto || cantidad_almacen === undefined) {
       return jsonResponse({ ok: false, error: "Datos incompletos" }, 400);
@@ -30,16 +32,6 @@ function doPost(e) {
     const colCantidadAlmacen = findCol("CANTIDAD ALMACEN") >= 0 ? findCol("CANTIDAD ALMACEN") + 1 : 5;
     const colFechaEntrada = findCol("FECHA ENTRADA") >= 0 ? findCol("FECHA ENTRADA") + 1 : 6;
 
-    let colCestas = findCol("CESTAS_CALCULADAS");
-    if (colCestas >= 0) {
-      colCestas = colCestas + 1;
-    } else {
-      // Crear columna al final si no existe
-      const lastCol = Math.max(sheet.getLastColumn(), 1);
-      colCestas = lastCol + 1;
-      sheet.getRange(1, colCestas).setValue("CESTAS_CALCULADAS");
-    }
-
     const data = sheet.getDataRange().getValues();
     let updated = 0;
     const fecha = fecha_entrada ? new Date(fecha_entrada) : new Date();
@@ -53,15 +45,15 @@ function doPost(e) {
           norm_(prod) === norm_(producto)) {
         sheet.getRange(i + 1, colCantidadAlmacen).setValue(cantidad_almacen);
         sheet.getRange(i + 1, colFechaEntrada).setValue(fecha);
-        if (cestas_calculadas !== undefined && cestas_calculadas !== null && cestas_calculadas !== '') {
-          sheet.getRange(i + 1, colCestas).setValue(cestas_calculadas);
-        }
         updated++;
       }
     }
 
     if (updated === 0) {
-      return jsonResponse({ ok: false, error: "No se encontró el lote/producto" }, 404);
+      return jsonResponse({
+        ok: false,
+        error: `No se encontró el lote/producto: ${String(numero_lote || '').trim()} | ${String(producto || '').trim()}`
+      }, 404);
     }
 
     return jsonResponse({ ok: true, updated });

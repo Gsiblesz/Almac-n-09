@@ -49,7 +49,7 @@ async function registrarEnSheets(codigoLote, productos) {
   for (const producto of productos) {
     const payload = {
       numero_lote: codigoLote,
-      producto: producto.descripcion || producto.codigo,
+      producto: String(producto.descripcion || producto.codigo || "").trim(),
       cantidad_almacen: producto.recibido,
       cestas_calculadas: producto.cestas_calculadas ?? null,
       fecha_entrada: fechaEntrada,
