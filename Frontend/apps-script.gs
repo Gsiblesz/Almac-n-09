@@ -1,6 +1,13 @@
 const SPREADSHEET_ID = "1mrBkcP3Wz04KfBxmNXP0tn6GI645lKctT095uW43ezw";
 const SHEET_NAME = "Entradas09";
 
+function norm_(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toUpperCase();
+}
+
 function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents || "{}");
@@ -42,8 +49,8 @@ function doPost(e) {
       const lote = row[0];
       const prod = row[1];
 
-      if (String(lote).trim() === String(numero_lote).trim() &&
-          String(prod).trim() === String(producto).trim()) {
+      if (norm_(lote) === norm_(numero_lote) &&
+          norm_(prod) === norm_(producto)) {
         sheet.getRange(i + 1, colCantidadAlmacen).setValue(cantidad_almacen);
         sheet.getRange(i + 1, colFechaEntrada).setValue(fecha);
         if (cestas_calculadas !== undefined && cestas_calculadas !== null && cestas_calculadas !== '') {

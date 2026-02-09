@@ -69,7 +69,10 @@ async function registrarEnSheets(codigoLote, productos) {
     }
 
     if (!response.ok || !data || data.ok !== true) {
-      throw new Error(text || "Error al registrar en Sheets");
+      const message = (data && (data.error || data.message))
+        ? String(data.error || data.message)
+        : (text || "Error al registrar en Sheets");
+      throw new Error(message);
     }
   }
 }
@@ -337,7 +340,7 @@ app.post("/validar-conteo", async (req, res) => {
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("Error en /validar-conteo:", error);
-    res.status(500).send("Error al validar el lote");
+    res.status(500).send(String(error && error.message ? error.message : "Error al validar el lote"));
   } finally {
     client.release();
   }
