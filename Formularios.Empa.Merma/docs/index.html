@@ -145,7 +145,14 @@
     (function(){
         let PRODUCTOS_CACHE = [];
         function getBaseUrl(){
-            return (localStorage.getItem('WEB_APP_URL_DYNAMIC')||'').trim() || "https://script.google.com/macros/s/AKfycbxn-tf1gi_efLVnSgletElQBSMgvn1Ma-SCET5sy48G2QGDpUs93gX5lsRjXA8vsP_9Sg/exec";
+            const stored = (localStorage.getItem('WEB_APP_URL_DYNAMIC')||'').trim();
+            if (stored) return stored;
+            try {
+                if (typeof WEB_APP_URL !== 'undefined' && String(WEB_APP_URL||'').trim()) {
+                    return String(WEB_APP_URL).trim();
+                }
+            } catch(_){ /* no-op */ }
+            return "https://script.google.com/macros/s/AKfycbzWJyQGgnGtgMK1mRxBmfrnMzp1Kf8Y4Jx-BQOWU6C7rwTytfXz2FH6LW_wAfatGtCQ/exec";
         }
         function opcionesMotivoHTML(){
             return `
@@ -181,11 +188,11 @@
                 const j = JSON.parse(text);
                 PRODUCTOS_CACHE = Array.isArray(j.products)
                     ? j.products.map(p=>({
-                        codigo:p.codigo,
-                        desc:p.descripcion,
-                        unidad:p.unidad,
-                        paquetes:p.paquetes,
-                        sobre_piso:p.sobre_piso
+                        codigo: String((p && p.codigo) || '').trim(),
+                        desc: String((p && (p.descripcion ?? p.desc)) || '').trim(),
+                        unidad: String((p && (p.unidad ?? p.unidad_primaria ?? p.Unidad_Primaria)) || '').trim(),
+                        paquetes: String((p && (p.paquetes ?? p.PAQUETES)) || '').trim(),
+                        sobre_piso: String((p && (p.sobre_piso ?? p.SOBRE_PISO ?? p.sobrePiso)) || '').trim()
                     }))
                     : [];
             } catch(e){ PRODUCTOS_CACHE = []; }
@@ -294,12 +301,18 @@
                         const paquetes = Number(qtyInput.dataset.paquetes);
                         const sobrePiso = Number(qtyInput.dataset.sobrePiso);
                         const sobre = Number.isFinite(sobrePiso) ? sobrePiso : 0;
-                        if (Number.isFinite(cantidad) && cantidad > 0 && Number.isFinite(paquetes) && paquetes > 0) {
-                            const cestasCalc = Math.ceil(cantidad / paquetes) + (sobre > 0 ? sobre : 0);
-                            cestasEl.textContent = `Cestas est.: ${cestasCalc}`;
-                        } else {
+                        if (!Number.isFinite(cantidad) || cantidad <= 0) {
                             cestasEl.textContent = '';
+                            return;
                         }
+
+                        if (!Number.isFinite(paquetes) || paquetes <= 0) {
+                            cestasEl.textContent = 'Cestas est.: N/D (sin PAQUETES)';
+                            return;
+                        }
+
+                        const cestasCalc = Math.ceil(cantidad / paquetes) + (sobre > 0 ? sobre : 0);
+                        cestasEl.textContent = `Cestas est.: ${cestasCalc}`;
                     };
                     qtyInput.addEventListener('input', updateCestas);
                     updateCestas();
