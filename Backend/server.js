@@ -47,8 +47,9 @@ async function registrarEnSheets(codigoLote, productos) {
   const fechaEntrada = new Date().toISOString();
 
   for (const producto of productos) {
+    const numeroLote = String(producto && producto.lote_producto ? producto.lote_producto : codigoLote || "").trim();
     const payload = {
-      numero_lote: codigoLote,
+      numero_lote: numeroLote,
       producto: String(producto.descripcion || producto.codigo || "").trim(),
       cantidad_almacen: producto.recibido,
       cestas_calculadas: producto.cestas_calculadas ?? null,
@@ -273,7 +274,7 @@ app.post("/validar-conteo", async (req, res) => {
     const loteId = loteResult.rows[0].id;
 
     const productosResult = await client.query(
-      "SELECT id, codigo, descripcion, cantidad, cestas_calculadas FROM lote_productos WHERE lote_id = $1 ORDER BY id",
+      "SELECT id, codigo, descripcion, cantidad, cestas_calculadas, lote_producto FROM lote_productos WHERE lote_id = $1 ORDER BY id",
       [loteId]
     );
 
@@ -320,6 +321,7 @@ app.post("/validar-conteo", async (req, res) => {
         descripcion: producto.descripcion || "",
         recibido,
         cestas_calculadas: producto.cestas_calculadas,
+        lote_producto: producto.lote_producto || "",
       });
     }
 
