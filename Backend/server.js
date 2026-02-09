@@ -18,6 +18,7 @@ app.use(express.static(staticDir));
 
 const appsScriptUrl = process.env.APPS_SCRIPT_URL || "";
 const adminKey = process.env.ADMIN_KEY || "";
+const buildVersion = process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || process.env.COMMIT_SHA || "dev";
 
 function formatDDMMYY(date) {
   const dd = String(date.getDate()).padStart(2, "0");
@@ -430,7 +431,11 @@ app.get("/errores-conteo", async (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  res.json({ ok: true });
+  res.json({
+    ok: true,
+    version: buildVersion,
+    appsScriptConfigured: Boolean(appsScriptUrl),
+  });
 });
 
 app.listen(port, () => {
