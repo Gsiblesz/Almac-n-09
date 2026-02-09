@@ -3,7 +3,7 @@
 // Si hay URL guardada en ajustes, úsala; si no, fallback a la fija:
 const WEB_APP_URL = (typeof localStorage !== 'undefined' && localStorage.getItem('WEB_APP_URL_DYNAMIC'))
     ? localStorage.getItem('WEB_APP_URL_DYNAMIC')
-    : "https://script.google.com/macros/s/AKfycbyNV-0aAlvp3TTfnfiBhGvBeuzlMkSZKl0dOWRkKR8-jBLcmaPs2bnNuF4lYu9k2Yneuw/exec"; // URL por defecto (deployment actual)
+    : "https://script.google.com/macros/s/AKfycbzWJyQGgnGtgMK1mRxBmfrnMzp1Kf8Y4Jx-BQOWU6C7rwTytfXz2FH6LW_wAfatGtCQ/exec"; // URL por defecto (deployment actual)
 
 const BACKEND_URL = (typeof localStorage !== 'undefined' && localStorage.getItem('BACKEND_URL'))
     ? localStorage.getItem('BACKEND_URL')

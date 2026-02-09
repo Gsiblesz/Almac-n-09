@@ -258,6 +258,7 @@
                             data-paquetes="${p.paquetes || ''}"
                             data-sobre-piso="${p.sobre_piso || ''}"
                             name="qty_${p.codigo}">
+                        ${isMerma ? '' : '<span class="cestas-est" aria-live="polite"></span>'}
                         ${isMerma ? `<select class="merma-motivo select" style="min-width:210px;">${opcionesMotivoHTML()}</select>
                         <input type="text" class="merma-lote" placeholder="Lote" style="min-width:120px;"/>` : `<input type="text" class="empa-lote" placeholder="Lote" style="min-width:140px;"/>`}
                         <button type="button" class="remove-sel">✕</button>
@@ -285,7 +286,25 @@
                 }
                 row.querySelector('.remove-sel').addEventListener('click', ()=>row.remove());
                 contSel.appendChild(row);
-                row.querySelector('.prod-qty').focus();
+                const qtyInput = row.querySelector('.prod-qty');
+                const cestasEl = row.querySelector('.cestas-est');
+                if (qtyInput && cestasEl) {
+                    const updateCestas = () => {
+                        const cantidad = Number(qtyInput.value);
+                        const paquetes = Number(qtyInput.dataset.paquetes);
+                        const sobrePiso = Number(qtyInput.dataset.sobrePiso);
+                        const sobre = Number.isFinite(sobrePiso) ? sobrePiso : 0;
+                        if (Number.isFinite(cantidad) && cantidad > 0 && Number.isFinite(paquetes) && paquetes > 0) {
+                            const cestasCalc = Math.ceil(cantidad / paquetes) + (sobre > 0 ? sobre : 0);
+                            cestasEl.textContent = `Cestas est.: ${cestasCalc}`;
+                        } else {
+                            cestasEl.textContent = '';
+                        }
+                    };
+                    qtyInput.addEventListener('input', updateCestas);
+                    updateCestas();
+                }
+                if (qtyInput) qtyInput.focus();
                 close();
             }
             return { render, open, close, buscar };

@@ -68,6 +68,8 @@ function doPost(e) {
         'CESTAS_CALCULADAS'
       ];
   const colCount = ensureHeaderFull(sh, desiredHeader);
+  // Asegurar nombre exacto de la columna 13
+  try { sh.getRange(1, 13).setValue('CESTAS_CALCULADAS'); } catch(_) {}
   normalizeTables(sh, desiredHeader);
   writeCols = desiredHeader.length;
 

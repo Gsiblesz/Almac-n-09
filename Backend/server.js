@@ -50,6 +50,7 @@ async function registrarEnSheets(codigoLote, productos) {
       numero_lote: codigoLote,
       producto: producto.descripcion || producto.codigo,
       cantidad_almacen: producto.recibido,
+      cestas_calculadas: producto.cestas_calculadas ?? null,
       fecha_entrada: fechaEntrada,
     };
 
@@ -168,7 +169,7 @@ app.get("/lotes", async (req, res) => {
        FROM lotes l
        JOIN lote_productos lp ON lp.lote_id = l.id
        GROUP BY l.id
-       ORDER BY l.created_at DESC`
+       ORDER BY l.created_at ASC`
     );
 
     res.json(result.rows);
@@ -268,7 +269,7 @@ app.post("/validar-conteo", async (req, res) => {
     const loteId = loteResult.rows[0].id;
 
     const productosResult = await client.query(
-      "SELECT codigo, descripcion, cantidad, cestas_calculadas FROM lote_productos WHERE lote_id = $1 ORDER BY id",
+      "SELECT id, codigo, descripcion, cantidad, cestas_calculadas FROM lote_productos WHERE lote_id = $1 ORDER BY id",
       [loteId]
     );
 
@@ -277,17 +278,30 @@ app.post("/validar-conteo", async (req, res) => {
       return res.status(404).send("Lote no encontrado");
     }
 
-    const cantidadesMap = new Map();
+    const cantidadesPorProductoId = new Map();
+    const cantidadesPorCodigo = new Map();
     for (const item of productos_y_cantidades) {
-      if (item.codigo && item.cantidad !== undefined) {
-        cantidadesMap.set(item.codigo, Number(item.cantidad));
+      const cantidad = Number(item && item.cantidad);
+      if (Number.isNaN(cantidad)) continue;
+
+      const productoId = Number(item && item.id);
+      if (Number.isFinite(productoId) && productoId > 0) {
+        cantidadesPorProductoId.set(productoId, cantidad);
+        continue;
+      }
+
+      const codigo = item && item.codigo ? String(item.codigo).trim() : "";
+      if (codigo) {
+        cantidadesPorCodigo.set(codigo, cantidad);
       }
     }
 
     let hayMismatch = false;
     const productosParaSheets = [];
     for (const producto of productosResult.rows) {
-      const recibido = cantidadesMap.get(producto.codigo);
+      const recibido = cantidadesPorProductoId.has(producto.id)
+        ? cantidadesPorProductoId.get(producto.id)
+        : cantidadesPorCodigo.get(producto.codigo);
       if (recibido === undefined || Number.isNaN(recibido)) {
         hayMismatch = true;
         break;
@@ -301,6 +315,7 @@ app.post("/validar-conteo", async (req, res) => {
         codigo: producto.codigo,
         descripcion: producto.descripcion || "",
         recibido,
+        cestas_calculadas: producto.cestas_calculadas,
       });
     }
 

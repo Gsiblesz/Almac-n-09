@@ -175,6 +175,7 @@ function renderDetalle() {
     input.min = "0";
     input.required = true;
     input.id = `cantidad-${producto.id}`;
+    input.dataset.productoId = String(producto.id);
     input.dataset.codigo = producto.codigo;
     input.placeholder = "0";
     inputWrap.appendChild(label);
@@ -225,6 +226,7 @@ validacionForm.addEventListener("submit", async (event) => {
 
   const inputs = productosContainer.querySelectorAll("input[data-codigo]");
   const cantidades = Array.from(inputs).map((input) => ({
+    id: Number(input.dataset.productoId),
     codigo: input.dataset.codigo,
     cantidad: Number(input.value),
   }));
