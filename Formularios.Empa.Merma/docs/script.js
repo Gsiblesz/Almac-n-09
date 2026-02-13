@@ -218,7 +218,12 @@ function enviarFormulario(formId, url) {
         }
         try {
             if (formId === "empaquetados-form") {
-                await registrarLoteBackend(seleccionados, loteGlobal);
+                const entregadoEl = document.getElementById('empa-entregado');
+                const entregadoA = (entregadoEl && entregadoEl.value ? String(entregadoEl.value) : '').trim().toUpperCase();
+                const debeRegistrarEnBackend = entregadoA === 'DESPACHO';
+                if (debeRegistrarEnBackend) {
+                    await registrarLoteBackend(seleccionados, loteGlobal);
+                }
             }
         } catch (backendError) {
             if (msgEl) msgEl.textContent = "No se pudo registrar el lote en la base de datos. " + backendError.message;
@@ -253,7 +258,23 @@ function enviarFormulario(formId, url) {
             try { console.log('[ENVIAR_FORM]', formId, 'status:', response.status, 'okFlag:', ok, 'duplicate:', duplicate, 'raw:', txt); } catch(_) {}
             // Consideramos éxito también si la respuesta es no legible pero status 200 (opaque redirect no-cors)
             if (ok || response.status === 0) {
-                if (msgEl) msgEl.textContent = duplicate ? "Registro ya existente (deduplicado)." : "¡Formulario enviado correctamente!";
+                if (msgEl) {
+                    if (duplicate) {
+                        msgEl.textContent = "Registro ya existente (deduplicado).";
+                    } else if (formId === "empaquetados-form") {
+                        const entregadoEl = document.getElementById('empa-entregado');
+                        const entregadoA = (entregadoEl && entregadoEl.value ? String(entregadoEl.value) : '').trim().toUpperCase();
+                        if (entregadoA === 'K FOOD') {
+                            msgEl.textContent = "¡Formulario enviado! Registro visible solo en Google Sheets (K FOOD).";
+                        } else if (entregadoA === 'DESPACHO') {
+                            msgEl.textContent = "¡Formulario enviado! Registro enviado a Google Sheets y base de datos (DESPACHO).";
+                        } else {
+                            msgEl.textContent = "¡Formulario enviado correctamente!";
+                        }
+                    } else {
+                        msgEl.textContent = "¡Formulario enviado correctamente!";
+                    }
+                }
                 // Disparar evento para página de registros
                 try {
                     const insertedCount = Array.from(form.querySelectorAll('.prod-qty')).filter(inp => parseInt(inp.value,10)>0).length;
