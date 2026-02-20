@@ -98,6 +98,7 @@ app.post("/nuevo-lote", async (req, res) => {
   }
 
   const client = await pool.connect();
+  let txStarted = false;
   try {
     let codigoLote = codigo_lote ? String(codigo_lote).trim() : "";
     if (codigoLote) {
@@ -106,7 +107,6 @@ app.post("/nuevo-lote", async (req, res) => {
         [codigoLote]
       );
       if (exists.rows.length > 0) {
-        await client.query("ROLLBACK");
         return res.status(409).send("El código de lote ya existe");
       }
     } else {
@@ -114,6 +114,7 @@ app.post("/nuevo-lote", async (req, res) => {
     }
 
     await client.query("BEGIN");
+    txStarted = true;
     const loteResult = await client.query(
       "INSERT INTO lotes (codigo_lote) VALUES ($1) RETURNING id",
       [codigoLote]
@@ -145,9 +146,12 @@ app.post("/nuevo-lote", async (req, res) => {
     }
 
     await client.query("COMMIT");
+    txStarted = false;
     res.json({ codigo_lote: codigoLote });
   } catch (error) {
-    await client.query("ROLLBACK");
+    if (txStarted) {
+      await client.query("ROLLBACK");
+    }
     console.error("Error en /nuevo-lote:", error);
     res.status(500).send("Error al crear el lote");
   } finally {
