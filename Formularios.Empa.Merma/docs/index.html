@@ -138,6 +138,35 @@
                 </div>
             </form>
         </div>
+        <div id="confirmacion-modal" class="confirm-modal" aria-hidden="true">
+            <div class="confirm-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-titulo">
+                <h3 id="confirm-titulo">Verifica la información antes de enviar</h3>
+                <div id="confirm-meta" class="confirm-meta"></div>
+                <div class="confirm-table-wrap">
+                    <table class="confirm-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Código</th>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Lote</th>
+                                <th>Motivo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="confirm-productos-body"></tbody>
+                    </table>
+                </div>
+                <label class="confirm-check">
+                    <input type="checkbox" id="confirm-check" />
+                    Confirmo que cantidades, lotes y productos están correctos.
+                </label>
+                <div class="confirm-actions">
+                    <button type="button" id="confirm-editar" class="secondary">Editar</button>
+                    <button type="button" id="confirm-enviar" disabled>Confirmar envío</button>
+                </div>
+            </div>
+        </div>
         <div id="mensaje"></div>
     </div>
     <script src="script.js"></script>

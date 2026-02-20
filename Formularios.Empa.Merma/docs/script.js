@@ -56,6 +56,137 @@ async function registrarLoteBackend(seleccionados, codigoLote) {
     }
 }
 
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function formatFechaVisual(raw) {
+    const value = String(raw || '').trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const [y, m, d] = value.split('-');
+        return `${d}-${m}-${y}`;
+    }
+    return value;
+}
+
+function getInputValueById(id) {
+    const el = document.getElementById(id);
+    return el ? String(el.value || '').trim() : '';
+}
+
+function buildResumenMeta(formId) {
+    const isEmpa = formId === 'empaquetados-form';
+    const fecha = isEmpa ? formatFechaVisual(getInputValueById('empa-fecha')) : formatFechaVisual(getInputValueById('merma-fecha'));
+    const hora = isEmpa ? getInputValueById('empa-hora') : getInputValueById('merma-hora');
+    const responsable = isEmpa ? getInputValueById('empa-responsable') : getInputValueById('merma-responsable');
+    const sede = isEmpa ? getInputValueById('empa-sede') : getInputValueById('merma-sede');
+
+    const baseItems = [
+        ['Fecha', fecha || '-'],
+        ['Hora', hora || '-'],
+        ['Responsable', responsable || '-'],
+        ['Sede', sede || '-']
+    ];
+
+    if (isEmpa) {
+        const maquina = getInputValueById('empa-maquina');
+        const entregado = getInputValueById('empa-entregado');
+        const registro = getInputValueById('empa-registro');
+        const lotePreview = getInputValueById('empa-lote-preview').replace(/^Lote:\s*/i, '');
+        baseItems.splice(2, 0,
+            ['Máquina', maquina || '-'],
+            ['Entregado a', entregado || '-'],
+            ['N° registro', registro || '-'],
+            ['Lote sugerido', lotePreview || '-']
+        );
+    }
+
+    return baseItems;
+}
+
+function buildProductosResumenRows(formId, seleccionados) {
+    const isMerma = formId === 'merma-form';
+    return (seleccionados || []).map((item, idx) => {
+        const cantidad = `${item.cantidad}${item.unidad ? ` ${item.unidad}` : ''}`;
+        const motivo = isMerma ? (item.motivo || '-') : '-';
+        return `
+            <tr>
+                <td>${idx + 1}</td>
+                <td>${escapeHtml(item.codigo || '-')}</td>
+                <td>${escapeHtml(item.descripcion || '-')}</td>
+                <td>${escapeHtml(cantidad)}</td>
+                <td>${escapeHtml(item.lote || '-')}</td>
+                <td>${escapeHtml(motivo)}</td>
+            </tr>`;
+    }).join('');
+}
+
+function mostrarConfirmacionEnvio(formId, seleccionados) {
+    const modal = document.getElementById('confirmacion-modal');
+    const titleEl = document.getElementById('confirm-titulo');
+    const metaEl = document.getElementById('confirm-meta');
+    const bodyEl = document.getElementById('confirm-productos-body');
+    const checkEl = document.getElementById('confirm-check');
+    const editarBtn = document.getElementById('confirm-editar');
+    const enviarBtn = document.getElementById('confirm-enviar');
+
+    if (!modal || !titleEl || !metaEl || !bodyEl || !checkEl || !editarBtn || !enviarBtn) {
+        return Promise.resolve(window.confirm('Verifica cantidades, productos y lotes antes de enviar. ¿Confirmas el envío?'));
+    }
+
+    const titulo = formId === 'empaquetados-form'
+        ? 'Verifica Empaquetado antes de enviar'
+        : 'Verifica Merma antes de enviar';
+    titleEl.textContent = titulo;
+
+    const metaItems = buildResumenMeta(formId);
+    metaEl.innerHTML = metaItems
+        .map(([key, val]) => `<div class="confirm-meta-item"><strong>${escapeHtml(key)}:</strong> ${escapeHtml(val)}</div>`)
+        .join('');
+
+    bodyEl.innerHTML = buildProductosResumenRows(formId, seleccionados);
+    checkEl.checked = false;
+    enviarBtn.disabled = true;
+
+    return new Promise((resolve) => {
+        let closed = false;
+        const close = (confirmed) => {
+            if (closed) return;
+            closed = true;
+            modal.classList.remove('open');
+            modal.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+            checkEl.removeEventListener('change', onToggle);
+            editarBtn.removeEventListener('click', onCancel);
+            enviarBtn.removeEventListener('click', onConfirm);
+            modal.removeEventListener('click', onBackdrop);
+            document.removeEventListener('keydown', onEsc);
+            resolve(confirmed);
+        };
+
+        const onToggle = () => { enviarBtn.disabled = !checkEl.checked; };
+        const onCancel = () => close(false);
+        const onConfirm = () => close(true);
+        const onBackdrop = (e) => { if (e.target === modal) close(false); };
+        const onEsc = (e) => { if (e.key === 'Escape') close(false); };
+
+        checkEl.addEventListener('change', onToggle);
+        editarBtn.addEventListener('click', onCancel);
+        enviarBtn.addEventListener('click', onConfirm);
+        modal.addEventListener('click', onBackdrop);
+        document.addEventListener('keydown', onEsc);
+
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    });
+}
+
 function enviarFormulario(formId, url) {
     const form = document.getElementById(formId);
     form.addEventListener("submit", async function(e) {
@@ -70,9 +201,9 @@ function enviarFormulario(formId, url) {
         }
         form.dataset.submitting = "1";
         const submitBtn = form.querySelector('button[type="submit"]');
-        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "Enviando..."; }
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "Revisar..."; }
         const msgEl = document.getElementById("mensaje");
-        if (msgEl) msgEl.textContent = "Enviando...";
+        if (msgEl) msgEl.textContent = "Revisa el resumen y confirma el envío...";
         const datos = new FormData(form);
         // Lote global para Empaquetado (respaldo si el lote por producto está vacío)
         let loteGlobal = '';
@@ -216,6 +347,21 @@ function enviarFormulario(formId, url) {
             }
             return;
         }
+
+        const confirmado = await mostrarConfirmacionEnvio(formId, seleccionados);
+        if (!confirmado) {
+            if (msgEl) msgEl.textContent = "Envío cancelado para que puedas corregir la información.";
+            form.dataset.submitting = "0";
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Enviar";
+            }
+            return;
+        }
+
+        if (submitBtn) { submitBtn.textContent = "Enviando..."; }
+        if (msgEl) msgEl.textContent = "Enviando...";
+
         try {
             if (formId === "empaquetados-form") {
                 const entregadoEl = document.getElementById('empa-entregado');
