@@ -101,7 +101,9 @@ function doPost(e) {
       }
 
       // Construir Entradas09 desde las filas ya armadas (mismo dato que EMPAQUETADO)
-      entradasRows = rows.map(r => {
+      const entregadoNormalizado = String(entregado || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const excluirDeEntradas09 = entregadoNormalizado === 'KFOOD';
+      entradasRows = excluirDeEntradas09 ? [] : rows.map(r => {
         const loteVal = r[11] || '';
         const prodVal = r[3] || '';
         const cantVal = toNumber(r[4]);
