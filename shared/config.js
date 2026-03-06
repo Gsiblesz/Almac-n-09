@@ -4,13 +4,7 @@ const APP_CONFIG = {
   ALMACEN09_URL: "https://script.google.com/macros/s/AKfycbw8EBBRr7ymIK1JXtscQf8yIRmJj1MahtAhnIH9yg0I65zjdB-zmvcxz6XzpNd-yPzf/exec"
 };
 
-const APP_MAINTENANCE = {
-  MIGRATION_LOCK_ENABLED: true,
-  LOCK_LABEL: "Bloqueado por Migración"
-};
-
 window.APP_CONFIG = Object.freeze({ ...APP_CONFIG });
-window.APP_MAINTENANCE = Object.freeze({ ...APP_MAINTENANCE });
 
 window.getConfigUrl = function getConfigUrl(configKey, fallback = "") {
   const config = window.APP_CONFIG || {};

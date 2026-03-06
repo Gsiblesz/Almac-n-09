@@ -503,13 +503,5 @@ function clearForm(formId){
     if(btn) btn.textContent = 'Enviar';
 }
 
-if (window.MaintenanceUI) {
-    window.MaintenanceUI.renderBannerBySelector('[data-maintenance-banner]');
-    if (window.MaintenanceUI.isMigrationLockEnabled()) {
-        window.MaintenanceUI.lockFormSubmission('#empaquetados-form', { statusTargetSelector: '#mensaje' });
-        window.MaintenanceUI.lockFormSubmission('#merma-form', { statusTargetSelector: '#mensaje' });
-    }
-}
-
 enviarFormulario("empaquetados-form", APPS_SCRIPT_URL_EMPAQUETADOS);
 enviarFormulario("merma-form", APPS_SCRIPT_URL_MERMA);
