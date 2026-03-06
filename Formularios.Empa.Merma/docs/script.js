@@ -59,10 +59,16 @@ async function registrarLoteBackend(seleccionados, codigoLote) {
         body: JSON.stringify(payload)
     });
 
+    if (response.status === 409) {
+        return { ok: true, duplicate: true };
+    }
+
     if (!response.ok) {
         const text = await response.text();
         throw new Error(text || `HTTP ${response.status}`);
     }
+
+    return { ok: true, duplicate: false };
 }
 
 function escapeHtml(value) {
@@ -373,25 +379,6 @@ function enviarFormulario(formId, url) {
 
         let backendSyncStatus = 'not-applicable';
 
-        if (formId === "empaquetados-form") {
-            const entregadoEl = document.getElementById('empa-entregado');
-            const entregadoA = (entregadoEl && entregadoEl.value ? String(entregadoEl.value) : '').trim().toUpperCase();
-            const debeRegistrarEnBackend = entregadoA === 'DESPACHO';
-            if (debeRegistrarEnBackend) {
-                if (isBackendApiUrl(BACKEND_URL)) {
-                    try {
-                    await registrarLoteBackend(seleccionados, loteGlobal);
-                        backendSyncStatus = 'ok';
-                    } catch (backendError) {
-                        backendSyncStatus = 'failed';
-                        try { console.error('[BACKEND_SYNC_ERROR]', backendError); } catch(_) {}
-                    }
-                } else {
-                    backendSyncStatus = 'skipped';
-                }
-            }
-        }
-
         fetch(url, {
             method: "POST",
             body: datos
@@ -415,6 +402,25 @@ function enviarFormulario(formId, url) {
             try { console.log('[ENVIAR_FORM]', formId, 'status:', response.status, 'okFlag:', ok, 'duplicate:', duplicate, 'raw:', txt); } catch(_) {}
             // Consideramos éxito también si la respuesta es no legible pero status 200 (opaque redirect no-cors)
             if (ok || response.status === 0) {
+                if (formId === "empaquetados-form") {
+                    const entregadoEl = document.getElementById('empa-entregado');
+                    const entregadoA = (entregadoEl && entregadoEl.value ? String(entregadoEl.value) : '').trim().toUpperCase();
+                    const debeRegistrarEnBackend = entregadoA === 'DESPACHO';
+                    if (debeRegistrarEnBackend) {
+                        if (isBackendApiUrl(BACKEND_URL)) {
+                            try {
+                                const backendResult = await registrarLoteBackend(seleccionados, loteGlobal);
+                                backendSyncStatus = backendResult && backendResult.ok ? 'ok' : 'failed';
+                            } catch (backendError) {
+                                backendSyncStatus = 'failed';
+                                try { console.error('[BACKEND_SYNC_ERROR]', backendError); } catch(_) {}
+                            }
+                        } else {
+                            backendSyncStatus = 'skipped';
+                        }
+                    }
+                }
+
                 if (msgEl) {
                     if (duplicate) {
                         msgEl.textContent = "Registro ya existente (deduplicado).";
