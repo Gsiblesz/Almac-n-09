@@ -237,9 +237,19 @@ button {
   cursor: pointer;
 }
 
-button.secondary {
+button.secondary,
+a.secondary {
   background: #eef2ff;
   color: #2f3f7c;
+}
+
+a.secondary {
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
 }
 
 button.danger {
