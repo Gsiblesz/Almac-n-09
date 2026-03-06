@@ -379,9 +379,16 @@ function enviarFormulario(formId, url) {
 
         let backendSyncStatus = 'not-applicable';
 
+        const datosEntries = Array.from(datos.entries()).map(([key, value]) => [key, String(value)]);
+        const buildPostBody = () => {
+            const params = new URLSearchParams();
+            datosEntries.forEach(([key, value]) => params.append(key, value));
+            return params;
+        };
+
         fetch(url, {
             method: "POST",
-            body: datos
+            body: buildPostBody()
         })
         .then(async (response) => {
             let txt;
@@ -476,11 +483,33 @@ function enviarFormulario(formId, url) {
                 if (msgEl) msgEl.textContent = "Error al enviar el formulario. " + (errorMsg ? ("Detalle: "+ errorMsg) : "Puedes reintentar.") + debugMsg;
             }
         })
-        .catch(error => {
-            // Fallback: asumimos que puede haber sido un bloqueo de lectura pero el backend insertó la fila.
-            if (msgEl) msgEl.textContent = "Posible envío exitoso (respuesta no legible). Verifica en la hoja. Si falta, reintenta.";
+        .catch(async (error) => {
             try { console.error('[ENVIAR_FORM][ERROR]', formId, error); } catch(_) {}
-            // No limpiamos por si realmente no llegó; conservamos nonce para reintentar.
+            try {
+                await fetch(url, {
+                    method: "POST",
+                    mode: "no-cors",
+                    body: buildPostBody()
+                });
+
+                if (msgEl) msgEl.textContent = "Envío realizado en modo compatibilidad. Verifica en la hoja de Google Sheets.";
+                try {
+                    const insertedCount = Array.from(form.querySelectorAll('.prod-qty')).filter(inp => parseInt(inp.value,10)>0).length;
+                    const hoja = url.includes('Empaquetado') ? 'Empaquetado' : (url.includes('Merma') ? 'Merma' : '');
+                    window.dispatchEvent(new CustomEvent('registroInsertado',{ detail:{ sheet:hoja, productos:insertedCount, nonce: form.dataset.nonce || '' }}));
+                } catch(_) {}
+                form.reset();
+                const qtyInputs = form.querySelectorAll('.prod-qty');
+                qtyInputs.forEach(i => i.value = "");
+                const contenedores = form.querySelectorAll('.seleccionados');
+                contenedores.forEach(c => c.innerHTML = "");
+                delete form.dataset.nonce;
+                try { localStorage.removeItem(`nonce_${formId}`); } catch(_) {}
+                setTimeout(() => { if (msgEl) msgEl.textContent = ""; }, 3500);
+            } catch (fallbackErr) {
+                if (msgEl) msgEl.textContent = "No se pudo enviar al Apps Script. Revisa despliegue/permisos y reintenta.";
+                try { console.error('[ENVIAR_FORM][FALLBACK_ERROR]', formId, fallbackErr); } catch(_) {}
+            }
         })
         .finally(() => {
             // Pequeño enfriamiento para evitar reenvío inmediato
