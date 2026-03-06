@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Formularios Empaquetado y Merma</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="../../shared/maintenance.css" />
 </head>
 <body>
     <div class="container">
+        <div data-maintenance-banner data-project-name="Empaquetado y Merma"></div>
         <h1>Registro de Formularios</h1>
         <div style="text-align:center; margin-bottom:20px;">
             <a href="menu.html" class="volver-menu">&#8592; Volver al menú</a>
@@ -169,6 +171,8 @@
         </div>
         <div id="mensaje"></div>
     </div>
+    <script src="../../shared/config.js"></script>
+    <script src="../../shared/maintenance.js"></script>
     <script src="script.js"></script>
     <script>
     (function(){
@@ -176,12 +180,10 @@
         function getBaseUrl(){
             const stored = (localStorage.getItem('WEB_APP_URL_DYNAMIC')||'').trim();
             if (stored) return stored;
-            try {
-                if (typeof WEB_APP_URL !== 'undefined' && String(WEB_APP_URL||'').trim()) {
-                    return String(WEB_APP_URL).trim();
-                }
-            } catch(_){ /* no-op */ }
-            return "https://script.google.com/macros/s/AKfycbwaa_QX_UbAeg4gIk7spdWVQukivTXRbxxhY6zpR1tVrDVmFLB99ZNnDxto4ZnrKFeslg/exec";
+            if (window.getConfigUrl) {
+                return window.getConfigUrl('EMPAQUETADO_URL', '');
+            }
+            return '';
         }
         function opcionesMotivoHTML(){
             return `

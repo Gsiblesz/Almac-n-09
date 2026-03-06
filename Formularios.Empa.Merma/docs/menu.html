@@ -44,6 +44,7 @@
             Hecho por el Pasante de Producción Gerardo Siblesz
         </div>
     </div>
+    <script src="../../shared/config.js"></script>
     <script>
     // Navegación directa a la pestaña correspondiente
     document.querySelectorAll('.menu-btn').forEach(btn => {
@@ -59,7 +60,7 @@
     // Panel de ajustes dinámico
     // Clave de administrador estática (solo control básico en cliente; no seguridad real).
     const ADMIN_KEY = 'PASANTIAS90';
-    const DEFAULT_URL = "https://script.google.com/macros/s/AKfycbwaa_QX_UbAeg4gIk7spdWVQukivTXRbxxhY6zpR1tVrDVmFLB99ZNnDxto4ZnrKFeslg/exec";
+    const DEFAULT_URL = window.getConfigUrl ? window.getConfigUrl('EMPAQUETADO_URL', '') : '';
     function isAdminUnlocked(){ try { return sessionStorage.getItem('ADMIN_UNLOCKED') === '1'; } catch(_) { return false; } }
     function openProductos(e){
         e.preventDefault();
@@ -106,7 +107,7 @@
     function cargarURL(){
         const saved = localStorage.getItem('WEB_APP_URL_DYNAMIC');
         const input = document.getElementById('input-webapp');
-        input.value = saved && saved.trim() ? saved.trim() : DEFAULT_URL;
+        input.value = saved && saved.trim() ? saved.trim() : (DEFAULT_URL || '');
     }
     function ocultarBloqueURL(){ const b=document.getElementById('url-block'); if(b) b.style.display='none'; }
     function desbloquearURL(){
@@ -148,7 +149,7 @@
             if(blockVisible){ url = document.getElementById('input-webapp').value.trim(); }
             if(!url){ url = (localStorage.getItem('WEB_APP_URL_DYNAMIC')||'').trim(); }
             if(!url){ url = DEFAULT_URL; }
-            if(!url){ mostrarResultado('No hay URL: desbloquea y guarda primero', false); return; }
+            if(!url){ mostrarResultado('No hay URL configurada en APP_CONFIG ni en Ajustes.', false); return; }
             const pingUrl = url + (url.includes('?')?'&':'?') + 'ping=test';
             mostrarResultado('Probando...', true);
             fetch(pingUrl, { method:'GET', cache:'no-store' })

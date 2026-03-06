@@ -1,4 +1,6 @@
-const API_BASE = "https://almac-n-09.onrender.com";
+const API_BASE = window.getConfigUrl
+  ? window.getConfigUrl("ALMACEN09_URL", "https://almac-n-09.onrender.com")
+  : "https://almac-n-09.onrender.com";
 
 const loteList = document.getElementById("loteList");
 const loteVacio = document.getElementById("loteVacio");
@@ -23,6 +25,13 @@ const erroresConteoLista = document.getElementById("erroresConteoLista");
 let lotes = [];
 let loteActivo = null;
 let modo = "entradas";
+
+if (window.MaintenanceUI) {
+  window.MaintenanceUI.renderBannerBySelector("[data-maintenance-banner]");
+  if (window.MaintenanceUI.isMigrationLockEnabled()) {
+    window.MaintenanceUI.lockFormSubmission("#validacionForm", { statusTargetSelector: "#estado" });
+  }
+}
 
 function getRegistroLabel(loteId) {
   const index = lotes.findIndex((lote) => lote.id === loteId);

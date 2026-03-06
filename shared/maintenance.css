@@ -1,0 +1,31 @@
+.maintenance-banner {
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  color: #111827;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.maintenance-banner__title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.maintenance-banner__text {
+  margin: 0;
+  font-size: 14px;
+}
+
+.maintenance-submit-locked {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.maintenance-lock-status {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4b5563;
+}

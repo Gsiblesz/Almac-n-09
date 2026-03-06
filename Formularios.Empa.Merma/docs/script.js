@@ -1,17 +1,19 @@
-// Configura aquí la URL de tu Apps Script Web App (deployment URL que termina en /exec)
-// Ejemplo: const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby.../exec";
-// Si hay URL guardada en ajustes, úsala; si no, fallback a la fija:
-const WEB_APP_URL = (typeof localStorage !== 'undefined' && localStorage.getItem('WEB_APP_URL_DYNAMIC'))
-    ? localStorage.getItem('WEB_APP_URL_DYNAMIC')
-    : "https://script.google.com/macros/s/AKfycbwaa_QX_UbAeg4gIk7spdWVQukivTXRbxxhY6zpR1tVrDVmFLB99ZNnDxto4ZnrKFeslg/exec"; // URL por defecto (deployment actual)
+const WEB_APP_URL_DYNAMIC = (typeof localStorage !== 'undefined' && localStorage.getItem('WEB_APP_URL_DYNAMIC'))
+    ? String(localStorage.getItem('WEB_APP_URL_DYNAMIC') || '').trim()
+    : '';
 
 const BACKEND_URL = (typeof localStorage !== 'undefined' && localStorage.getItem('BACKEND_URL'))
     ? localStorage.getItem('BACKEND_URL')
-    : "https://almac-n-09.onrender.com";
+    : (window.getConfigUrl ? window.getConfigUrl('ALMACEN09_URL', 'https://almac-n-09.onrender.com') : 'https://almac-n-09.onrender.com');
 
-// Endpoints por hoja (el Apps Script espera ?sheet=Empaquetado | ?sheet=Merma)
-const APPS_SCRIPT_URL_EMPAQUETADOS = WEB_APP_URL ? WEB_APP_URL + "?sheet=Empaquetado" : "";
-const APPS_SCRIPT_URL_MERMA = WEB_APP_URL ? WEB_APP_URL + "?sheet=Merma" : "";
+// Endpoints por proyecto (prioriza URL dinámica; luego APP_CONFIG)
+const APPS_SCRIPT_URL_EMPAQUETADOS = WEB_APP_URL_DYNAMIC
+    ? WEB_APP_URL_DYNAMIC + "?sheet=Empaquetado"
+    : (window.getConfigUrl ? window.getConfigUrl('EMPAQUETADO_URL', '') : '');
+
+const APPS_SCRIPT_URL_MERMA = WEB_APP_URL_DYNAMIC
+    ? WEB_APP_URL_DYNAMIC + "?sheet=Merma"
+    : (window.getConfigUrl ? window.getConfigUrl('MERMA_URL', '') : '');
 
 function generarNonce() {
     try {
@@ -192,7 +194,7 @@ function enviarFormulario(formId, url) {
     form.addEventListener("submit", async function(e) {
         e.preventDefault();
         if (!url) {
-            document.getElementById("mensaje").textContent = "Configura la URL del Apps Script (WEB_APP_URL)";
+            document.getElementById("mensaje").textContent = "Configura las URLs en APP_CONFIG (EMPAQUETADO_URL / MERMA_URL).";
             return;
         }
         // Evitar envíos dobles (doble click, redoble toque)
@@ -499,6 +501,14 @@ function clearForm(formId){
     // Restaurar texto del botón si estaba en otro estado
     const btn = form.querySelector('button[type="submit"]');
     if(btn) btn.textContent = 'Enviar';
+}
+
+if (window.MaintenanceUI) {
+    window.MaintenanceUI.renderBannerBySelector('[data-maintenance-banner]');
+    if (window.MaintenanceUI.isMigrationLockEnabled()) {
+        window.MaintenanceUI.lockFormSubmission('#empaquetados-form', { statusTargetSelector: '#mensaje' });
+        window.MaintenanceUI.lockFormSubmission('#merma-form', { statusTargetSelector: '#mensaje' });
+    }
 }
 
 enviarFormulario("empaquetados-form", APPS_SCRIPT_URL_EMPAQUETADOS);
