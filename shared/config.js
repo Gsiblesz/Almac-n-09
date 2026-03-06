@@ -1,7 +1,7 @@
 const APP_CONFIG = {
-  EMPAQUETADO_URL: "NUEVA_URL_AQUI",
-  MERMA_URL: "NUEVA_URL_AQUI",
-  ALMACEN09_URL: "NUEVA_URL_AQUI"
+  EMPAQUETADO_URL: "https://script.google.com/macros/s/AKfycbxm5G6Xq-LU3o-IOUtrWpGO0a4a6832UPC0AcBTFAAwmlEh84goMwVnfs95SRzMG4Vu9A/exec",
+  MERMA_URL: "https://script.google.com/macros/s/AKfycbxm5G6Xq-LU3o-IOUtrWpGO0a4a6832UPC0AcBTFAAwmlEh84goMwVnfs95SRzMG4Vu9A/exec",
+  ALMACEN09_URL: "https://script.google.com/macros/s/AKfycbw8EBBRr7ymIK1JXtscQf8yIRmJj1MahtAhnIH9yg0I65zjdB-zmvcxz6XzpNd-yPzf/exec"
 };
 
 const APP_MAINTENANCE = {
