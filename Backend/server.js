@@ -262,6 +262,7 @@ app.post("/validar-conteo", async (req, res) => {
   }
 
   const client = await pool.connect();
+  let loteId = null;
   try {
     await client.query("BEGIN");
 
@@ -275,7 +276,7 @@ app.post("/validar-conteo", async (req, res) => {
       return res.status(404).send("Lote no encontrado");
     }
 
-    const loteId = loteResult.rows[0].id;
+    loteId = loteResult.rows[0].id;
 
     const productosResult = await client.query(
       "SELECT id, codigo, descripcion, cantidad, cestas_calculadas, lote_producto FROM lote_productos WHERE lote_id = $1 ORDER BY id",
@@ -346,8 +347,28 @@ app.post("/validar-conteo", async (req, res) => {
     res.json({ ok: true, message: "Lote validado. Pendiente de registrar en Sheets." });
   } catch (error) {
     await client.query("ROLLBACK");
+    const message = String(error && error.message ? error.message : "Error al validar el lote");
+    const isSheetsNotFound = /No se encontró el lote\/producto/i.test(message);
+
+    if (isSheetsNotFound) {
+      try {
+        if (loteId) {
+          await pool.query("DELETE FROM lotes WHERE id = $1", [loteId]);
+        }
+      } catch (cleanupError) {
+        console.error("Error limpiando lote huérfano:", cleanupError);
+      }
+
+      return res.status(409).json({
+        ok: false,
+        code: "SHEETS_LOTE_PRODUCTO_NOT_FOUND",
+        message,
+        cleanedOrphanLote: Boolean(loteId),
+      });
+    }
+
     console.error("Error en /validar-conteo:", error);
-    res.status(500).send(String(error && error.message ? error.message : "Error al validar el lote"));
+    res.status(500).send(message);
   } finally {
     client.release();
   }
