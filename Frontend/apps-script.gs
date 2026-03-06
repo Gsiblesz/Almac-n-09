@@ -1,4 +1,4 @@
-const SPREADSHEET_ID = "1mrBkcP3Wz04KfBxmNXP0tn6GI645lKctT095uW43ezw";
+const SPREADSHEET_ID = "1KR29IaMGRvHjVdgGLxDiJm6vx7gckUSor-LmqUI3Ej8";
 const SHEET_NAME = "Entradas09";
 
 function norm_(value) {
