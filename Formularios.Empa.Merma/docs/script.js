@@ -6,7 +6,12 @@ const WEB_APP_URL_DYNAMIC = window.getResolvedWebAppUrl
 
 const BACKEND_URL = (typeof localStorage !== 'undefined' && localStorage.getItem('BACKEND_URL'))
     ? localStorage.getItem('BACKEND_URL')
-    : (window.getConfigUrl ? window.getConfigUrl('ALMACEN09_URL', 'https://almac-n-09.onrender.com') : 'https://almac-n-09.onrender.com');
+    : 'https://almac-n-09.onrender.com';
+
+function isBackendApiUrl(url) {
+    const value = String(url || '').trim();
+    return /^https?:\/\//i.test(value) && !/script\.google\.com/i.test(value);
+}
 
 // Endpoints por proyecto (prioriza URL dinámica; luego APP_CONFIG)
 const APPS_SCRIPT_URL_EMPAQUETADOS = WEB_APP_URL_DYNAMIC
@@ -366,23 +371,25 @@ function enviarFormulario(formId, url) {
         if (submitBtn) { submitBtn.textContent = "Enviando..."; }
         if (msgEl) msgEl.textContent = "Enviando...";
 
-        try {
-            if (formId === "empaquetados-form") {
-                const entregadoEl = document.getElementById('empa-entregado');
-                const entregadoA = (entregadoEl && entregadoEl.value ? String(entregadoEl.value) : '').trim().toUpperCase();
-                const debeRegistrarEnBackend = entregadoA === 'DESPACHO';
-                if (debeRegistrarEnBackend) {
+        let backendSyncStatus = 'not-applicable';
+
+        if (formId === "empaquetados-form") {
+            const entregadoEl = document.getElementById('empa-entregado');
+            const entregadoA = (entregadoEl && entregadoEl.value ? String(entregadoEl.value) : '').trim().toUpperCase();
+            const debeRegistrarEnBackend = entregadoA === 'DESPACHO';
+            if (debeRegistrarEnBackend) {
+                if (isBackendApiUrl(BACKEND_URL)) {
+                    try {
                     await registrarLoteBackend(seleccionados, loteGlobal);
+                        backendSyncStatus = 'ok';
+                    } catch (backendError) {
+                        backendSyncStatus = 'failed';
+                        try { console.error('[BACKEND_SYNC_ERROR]', backendError); } catch(_) {}
+                    }
+                } else {
+                    backendSyncStatus = 'skipped';
                 }
             }
-        } catch (backendError) {
-            if (msgEl) msgEl.textContent = "No se pudo registrar el lote en la base de datos. " + backendError.message;
-            form.dataset.submitting = "0";
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = "Enviar";
-            }
-            return;
         }
 
         fetch(url, {
@@ -417,7 +424,9 @@ function enviarFormulario(formId, url) {
                         if (entregadoA === 'K FOOD') {
                             msgEl.textContent = "¡Formulario enviado! Registro visible solo en Google Sheets (K FOOD).";
                         } else if (entregadoA === 'DESPACHO') {
-                            msgEl.textContent = "¡Formulario enviado! Registro enviado a Google Sheets y base de datos (DESPACHO).";
+                            msgEl.textContent = backendSyncStatus === 'ok'
+                                ? "¡Formulario enviado! Registro enviado a Google Sheets y base de datos (DESPACHO)."
+                                : "¡Formulario enviado! Registro guardado en Google Sheets (sin sincronización de base de datos).";
                         } else {
                             msgEl.textContent = "¡Formulario enviado correctamente!";
                         }
