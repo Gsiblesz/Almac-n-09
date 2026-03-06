@@ -175,8 +175,9 @@
     (function(){
         let PRODUCTOS_CACHE = [];
         function getBaseUrl(){
-            const stored = (localStorage.getItem('WEB_APP_URL_DYNAMIC')||'').trim();
-            if (stored) return stored;
+            if (window.getResolvedWebAppUrl) {
+                return window.getResolvedWebAppUrl('EMPAQUETADO_URL', '');
+            }
             if (window.getConfigUrl) {
                 return window.getConfigUrl('EMPAQUETADO_URL', '');
             }

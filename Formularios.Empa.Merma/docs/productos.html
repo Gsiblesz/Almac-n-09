@@ -44,7 +44,9 @@
   <script>
   (function(){
       const ADMIN_KEY = 'PASANTIAS90'; // misma clave cliente (protege el endpoint para agregar)
-  const URL_BASE = (localStorage.getItem('WEB_APP_URL_DYNAMIC')||'').trim() || (window.getConfigUrl ? window.getConfigUrl('EMPAQUETADO_URL', '') : '');
+  const URL_BASE = window.getResolvedWebAppUrl
+    ? window.getResolvedWebAppUrl('EMPAQUETADO_URL', '')
+    : ((localStorage.getItem('WEB_APP_URL_DYNAMIC')||'').trim() || (window.getConfigUrl ? window.getConfigUrl('EMPAQUETADO_URL', '') : ''));
       let cache = [];
     let filtro = '';
       const cuerpo = document.querySelector('#tabla-productos tbody');

@@ -14,3 +14,20 @@ window.getConfigUrl = function getConfigUrl(configKey, fallback = "") {
   }
   return String(fallback || "").trim();
 };
+
+window.isValidAppsScriptExecUrl = function isValidAppsScriptExecUrl(url) {
+  const value = String(url || "").trim();
+  return /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:\?.*)?$/i.test(value);
+};
+
+window.getResolvedWebAppUrl = function getResolvedWebAppUrl(configKey, fallback = "") {
+  const stored = typeof localStorage !== "undefined"
+    ? String(localStorage.getItem("WEB_APP_URL_DYNAMIC") || "").trim()
+    : "";
+
+  if (window.isValidAppsScriptExecUrl(stored)) {
+    return stored;
+  }
+
+  return window.getConfigUrl(configKey, fallback);
+};

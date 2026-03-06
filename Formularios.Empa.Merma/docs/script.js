@@ -1,6 +1,8 @@
-const WEB_APP_URL_DYNAMIC = (typeof localStorage !== 'undefined' && localStorage.getItem('WEB_APP_URL_DYNAMIC'))
-    ? String(localStorage.getItem('WEB_APP_URL_DYNAMIC') || '').trim()
-    : '';
+const WEB_APP_URL_DYNAMIC = window.getResolvedWebAppUrl
+    ? window.getResolvedWebAppUrl('EMPAQUETADO_URL', '')
+    : ((typeof localStorage !== 'undefined' && localStorage.getItem('WEB_APP_URL_DYNAMIC'))
+        ? String(localStorage.getItem('WEB_APP_URL_DYNAMIC') || '').trim()
+        : '');
 
 const BACKEND_URL = (typeof localStorage !== 'undefined' && localStorage.getItem('BACKEND_URL'))
     ? localStorage.getItem('BACKEND_URL')

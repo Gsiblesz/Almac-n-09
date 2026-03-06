@@ -60,7 +60,9 @@
     // Panel de ajustes dinámico
     // Clave de administrador estática (solo control básico en cliente; no seguridad real).
     const ADMIN_KEY = 'PASANTIAS90';
-    const DEFAULT_URL = window.getConfigUrl ? window.getConfigUrl('EMPAQUETADO_URL', '') : '';
+    const DEFAULT_URL = window.getResolvedWebAppUrl
+        ? window.getResolvedWebAppUrl('EMPAQUETADO_URL', '')
+        : (window.getConfigUrl ? window.getConfigUrl('EMPAQUETADO_URL', '') : '');
     function isAdminUnlocked(){ try { return sessionStorage.getItem('ADMIN_UNLOCKED') === '1'; } catch(_) { return false; } }
     function openProductos(e){
         e.preventDefault();
@@ -105,9 +107,10 @@
         ocultarBloqueURL();
     }
     function cargarURL(){
-        const saved = localStorage.getItem('WEB_APP_URL_DYNAMIC');
+        const saved = (localStorage.getItem('WEB_APP_URL_DYNAMIC') || '').trim();
         const input = document.getElementById('input-webapp');
-        input.value = saved && saved.trim() ? saved.trim() : (DEFAULT_URL || '');
+        const validSaved = window.isValidAppsScriptExecUrl && window.isValidAppsScriptExecUrl(saved);
+        input.value = validSaved ? saved : (DEFAULT_URL || '');
     }
     function ocultarBloqueURL(){ const b=document.getElementById('url-block'); if(b) b.style.display='none'; }
     function desbloquearURL(){
@@ -147,7 +150,10 @@
             const blockVisible = document.getElementById('url-block').style.display!=='none';
             let url = '';
             if(blockVisible){ url = document.getElementById('input-webapp').value.trim(); }
-            if(!url){ url = (localStorage.getItem('WEB_APP_URL_DYNAMIC')||'').trim(); }
+            if(!url){
+                const stored = (localStorage.getItem('WEB_APP_URL_DYNAMIC')||'').trim();
+                url = (window.isValidAppsScriptExecUrl && window.isValidAppsScriptExecUrl(stored)) ? stored : '';
+            }
             if(!url){ url = DEFAULT_URL; }
             if(!url){ mostrarResultado('No hay URL configurada en APP_CONFIG ni en Ajustes.', false); return; }
             const pingUrl = url + (url.includes('?')?'&':'?') + 'ping=test';

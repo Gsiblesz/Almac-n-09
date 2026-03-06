@@ -87,8 +87,10 @@
   </div>
   <script src="../../shared/config.js"></script>
   <script>
-  const DEFAULT_URL = window.getConfigUrl ? window.getConfigUrl('EMPAQUETADO_URL', '') : '';
-    function getBaseUrl(){ return (localStorage.getItem('WEB_APP_URL_DYNAMIC')||'').trim() || DEFAULT_URL; }
+  const DEFAULT_URL = window.getResolvedWebAppUrl
+    ? window.getResolvedWebAppUrl('EMPAQUETADO_URL', '')
+    : (window.getConfigUrl ? window.getConfigUrl('EMPAQUETADO_URL', '') : '');
+    function getBaseUrl(){ return DEFAULT_URL; }
 
     async function fetchRecent(sheetKey, limit){
       const base = getBaseUrl();
